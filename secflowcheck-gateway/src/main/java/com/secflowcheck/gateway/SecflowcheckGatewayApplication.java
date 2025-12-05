@@ -1,0 +1,13 @@
+package com.secflowcheck.gateway;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class SecflowcheckGatewayApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(SecflowcheckGatewayApplication.class, args);
+    }
+
+}

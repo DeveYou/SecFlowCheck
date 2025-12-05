@@ -1,0 +1,51 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      default-filters:
+        - name: StripPrefix
+          args:
+            parts: 1
+
+      routes:
+        - id: parser-service
+          uri: lb://parser-service
+          predicates:
+            - Path=/parser/**
+
+        - id: analyzer-service
+          uri: lb://analyzer-service
+          predicates:
+            - Path=/analyzer/**
+
+        - id: report-service
+          uri: lb://report-service
+          predicates:
+            - Path=/reports/**
+
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/auth/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://discovery:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true

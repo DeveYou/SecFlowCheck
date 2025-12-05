@@ -1,0 +1,100 @@
+version: "3.8"
+services:
+  postgres:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: secflowcheck
+      POSTGRES_PASSWORD: secflowcheckpassword
+      POSTGRES_DB: secflowcheck_auth_db
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  mongo:
+    image: mongo:6
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - "27017:27017"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  discovery:
+    build: ./secflowcheck-discovery
+    ports:
+      - "8761:8761"
+
+  gateway:
+    build: ./secflowcheck-gateway
+    depends_on:
+      - discovery
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery:8761/eureka/
+    ports:
+      - "8080:8080"
+
+  auth:
+    build: ./secflowcheck-authentication
+    depends_on:
+      - discovery
+      - postgres
+    environment:
+      - JWT_SECRET=supersecretjwt
+      - DATABASE_URL=postgresql+asyncpg://secflowcheck:secflowcheckpassword@postgres:5432/secflowcheck_auth_db
+      - EUREKA_SERVER=http://discovery:8761/eureka
+    ports:
+      - "8000:8000"
+
+  parser:
+    build: ./secflowcheck-parser
+    depends_on:
+      - mongo
+      - discovery
+    environment:
+      - JWT_SECRET=supersecretjwt
+      - EUREKA_SERVER=http://discovery:8761/eureka
+    ports:
+      - "8001:8000"
+
+  analyzer:
+    build: ./secflowcheck-analyzer
+    depends_on:
+      - rabbitmq
+      - discovery
+    environment:
+      - CELERY_BROKER=amqp://guest:guest@rabbitmq:5672//
+      - REPORT_API_URL=http://report:8002/reports
+      - REPORT_JWT=   # if needed
+    ports:
+      - "8003:8000"
+
+  analyzer-worker:
+    build: ./secflowcheck-analyzer
+    command: celery -A celeryconfig.celery_app worker --loglevel=info -Q analysis_queue
+    depends_on:
+      - rabbitmq
+      - analyzer
+
+  report:
+    build: ./secflowcheck-report
+    depends_on:
+      - mongo
+      - discovery
+      - analyzer
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+      - MONGO_DB=secflowcheck
+      - JWT_SECRET=supersecretjwt
+    ports:
+      - "8002:8002"
+
+volumes:
+  mongo-data:
+  postgres-data:
