@@ -8,14 +8,14 @@ from eureka.client import EurekaClient
 
 
 client = EurekaClient(
-    app_name="report-service",
-    eureka_server="http://discovery:8761/eureka",
-    instance_port=8004
+    app_name=settings.APP_NAME,
+    eureka_server=settings.EUREKA_SERVER,
+    instance_port=settings.SERVICE_PORT
 )
 client.start()
 
 def create_app():
-    app = FastAPI(title=settings.APP_NAME, version=settings.VERSION)
+    app = FastAPI(title=settings.APP_TITLE, version=settings.VERSION)
     init_extensions(app)
     app.add_middleware(ExceptionMiddleware)
     app.add_middleware(APIKeyMiddleware)
