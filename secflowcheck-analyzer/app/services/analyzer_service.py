@@ -1,6 +1,6 @@
 import re
 from typing import List, Dict
-from app.models.analysis_model import Finding
+from app.models.finding_model import Finding
 
 # Basic rule definitions
 RULES = [
