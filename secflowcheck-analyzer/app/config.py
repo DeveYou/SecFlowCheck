@@ -3,11 +3,15 @@ from pydantic import BaseSettings
 class Settings(BaseSettings):
     APP_TITLE: str = "SecFlowCheck Analyzer Service"
     APP_NAME: str = "analyzer-service"
-    DEBUG: bool = True
+    DEBUG: bool
     VERSION: str = "1.0.0"
 
+    # Celery
+    CELERY_BROKER: str
+    CELERY_RESULT_BACKEND: str
+
     # Eureka (Service Discovery)
-    EUREKA_SERVER: str = "http://discovery-service:8761/eureka"
+    EUREKA_SERVER: str = "http://discovery:8761/eureka"
     SERVICE_PORT: int = 8003
     INSTANCE_IP: str = "secflowcheck-analyzer"
 

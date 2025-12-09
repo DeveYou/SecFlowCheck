@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
 
     # Eureka (Service Discovery)
-    EUREKA_SERVER: str = "http://discovery-service:8761/eureka"
+    EUREKA_SERVER: str = "http://discovery:8761/eureka"
     SERVICE_PORT: int = 8002
     INSTANCE_IP: str = "secflowcheck-parser"
 

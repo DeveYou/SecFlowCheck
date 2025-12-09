@@ -1,21 +1,31 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.config import settings
 from app.extensions import init_extensions, close_extensions
 from app.errors import ExceptionMiddleware
 from app.middleware.auth import APIKeyMiddleware
 from app.routes import report_routes
-from eureka.client import EurekaClient
+import py_eureka_client.eureka_client as eureka_client
 
 
-client = EurekaClient(
-    app_name=settings.APP_NAME,
-    eureka_server=settings.EUREKA_SERVER,
-    instance_port=settings.SERVICE_PORT
-)
-client.start()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Start Eureka Client
+    await eureka_client.init_async(
+        eureka_server=settings.EUREKA_SERVER,
+        app_name=settings.APP_NAME,
+        instance_port=settings.SERVICE_PORT,
+        instance_host=settings.INSTANCE_IP
+    )
+    print("Registered with Eureka")
+
+    yield
+
+    # Shutdown
+    await eureka_client.stop_async()
 
 def create_app():
-    app = FastAPI(title=settings.APP_TITLE, version=settings.VERSION)
+    app = FastAPI(title=settings.APP_TITLE, version=settings.VERSION, lifespan=lifespan)
     init_extensions(app)
     app.add_middleware(ExceptionMiddleware)
     app.add_middleware(APIKeyMiddleware)

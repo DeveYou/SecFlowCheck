@@ -5,4 +5,4 @@ httpx
 celery[redis]
 flower
 python-dotenv
-python-eureka-client
+py-eureka-client

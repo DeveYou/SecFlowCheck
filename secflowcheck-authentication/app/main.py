@@ -4,7 +4,7 @@ import py_eureka_client.eureka_client as eureka_client
 
 from app.config import settings
 from app.database import engine, Base
-from app.routes import auth
+from app.routes import auth_routes
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title=settings.APP_TITLE, lifespan=lifespan)
 
-app.include_router(auth.router)
+app.include_router(auth_routes.router)
 
 @app.get("/health")
 def health_check():
