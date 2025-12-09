@@ -12,6 +12,12 @@ services:
       - postgres-data:/var/lib/postgresql/data
     ports:
       - "${POSTGRES_PORT}:5432"
+    networks:
+      - secflowcheck-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U secflowcheck -d secflowcheck_auth_db"]
+      interval: 5s
+      retries: 5
 
   mongo:
     image: mongo:6
@@ -20,17 +26,38 @@ services:
       - mongo-data:/data/db
     ports:
       - "${MONGO_PORT}:27017"
+    networks:
+      - secflowcheck-network
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    networks:
+      - secflowcheck-network
 
   rabbitmq:
     image: rabbitmq:3-management
+    depends_on:
+      - redis
     ports:
       - "${RABBITMQ_PORT}:5672"
       - "${RABBITMQ_DASHBOARD_PORT}:15672"
+    networks:
+      - secflowcheck-network
 
   discovery:
     build: ./secflowcheck-discovery
     ports:
       - "${DISCOVERY_PORT}:8761"
+    networks:
+      - secflowcheck-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8761/actuator/health || exit 1"]
+      interval: 10s
+      retries: 10
+      start_period: 30s
+
 
   gateway:
     build: ./secflowcheck-gateway
@@ -40,29 +67,45 @@ services:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://discovery:8761/eureka/"
     ports:
       - "${GATEWAY_PORT}:8080"
+    networks:
+      - secflowcheck-network
 
   auth:
     build: ./secflowcheck-authentication
     depends_on:
-      - discovery
-      - postgres
+      discovery:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    entrypoint: ["/wait-for-service.sh", "postgres", "5432"]
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     environment:
       JWT_SECRET: ${JWT_SECRET}
       DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
       EUREKA_SERVER: "http://discovery:8761/eureka"
+      ALGORITHM: ${ALGORITHM}
+      DEBUG: ${DEBUG}
+      SECRET_KEY: ${SECRET_KEY}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "${AUTH_PORT}:8000"
+    networks:
+      - secflowcheck-network
 
   parser:
     build: ./secflowcheck-parser
     depends_on:
-      - mongo
       - discovery
     environment:
       JWT_SECRET: ${JWT_SECRET}
       EUREKA_SERVER: "http://discovery:8761/eureka"
     ports:
       - "${PARSER_PORT}:8000"
+    networks:
+      - secflowcheck-network
 
   analyzer:
     build: ./secflowcheck-analyzer
@@ -70,18 +113,30 @@ services:
       - rabbitmq
       - discovery
     environment:
-      CELERY_BROKER: "amqp://guest:guest@rabbitmq:5672//"
+      CELERY_BROKER: ${CELERY_BROKER}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
       REPORT_API_URL: "http://report:8002/reports"
       REPORT_JWT: ${REPORT_JWT}
+      DEBUG: ${DEBUG}
     ports:
       - "${ANALYZER_PORT}:8000"
+    networks:
+      - secflowcheck-network
 
   analyzer-worker:
     build: ./secflowcheck-analyzer
-    command: celery -A celeryconfig.celery_app worker --loglevel=info -Q analysis_queue
+    command: celery -A app.celeryconfig.celery_app worker --loglevel=info -Q analysis_queue
     depends_on:
       - rabbitmq
       - analyzer
+    environment:
+      CELERY_BROKER: ${CELERY_BROKER}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
+      REPORT_API_URL: "http://report:8002/reports"
+      REPORT_JWT: ${REPORT_JWT}
+      DEBUG: ${DEBUG}
+    networks:
+      - secflowcheck-network
 
   report:
     build: ./secflowcheck-report
@@ -89,13 +144,24 @@ services:
       - mongo
       - discovery
       - analyzer
+    entrypoint: ["/wait-for-service.sh", "mongo", "27017"]
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002"]
     environment:
       MONGO_URI: "mongodb://mongo:27017"
       MONGO_DB: ${MONGO_DB}
       JWT_SECRET: ${JWT_SECRET}
+      DEBUG: ${DEBUG}
+      API_KEY: ${API_KEY}
     ports:
       - "${REPORT_PORT}:8002"
+    networks:
+      - secflowcheck-network
 
 volumes:
   mongo-data:
   postgres-data:
+
+networks:
+  secflowcheck-network:
+    driver: bridge
+

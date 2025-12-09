@@ -22,7 +22,7 @@ class Report(Document):
     metadata: Optional[Any] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
-    class Collection:
+    class Settings:
         name = "reports"
 
 

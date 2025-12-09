@@ -1,6 +1,6 @@
 FROM eclipse-temurin:17-jdk-jammy
 
-ARG JAR_FILE=target/api-gateway-1.0.0.jar
+ARG JAR_FILE=target/*.jar
 WORKDIR /app
 
 COPY ${JAR_FILE} app.jar

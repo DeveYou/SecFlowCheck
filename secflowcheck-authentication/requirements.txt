@@ -11,3 +11,4 @@ asyncpg
 pydantic-settings>=2.0.0
 python-multipart
 PyYAML==6.0.1
+pydantic[email]

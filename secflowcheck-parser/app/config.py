@@ -13,6 +13,6 @@ class Settings(BaseSettings):
     INSTANCE_IP: str = "secflowcheck-parser"
 
     class Config:
-        env_file = ".env"
+        env_file = "../.env"
 
 settings = Settings()

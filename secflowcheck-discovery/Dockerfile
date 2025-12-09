@@ -1,6 +1,8 @@
 FROM eclipse-temurin:17-jdk-jammy
 
-ARG JAR_FILE=target/secflowcheck-discovery-0.0.1-SNAPSHOT.jar
+RUN apt-get update && apt-get install -y --no-install-recommends curl && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+ARG JAR_FILE=target/*.jar
 WORKDIR /app
 
 COPY ${JAR_FILE} app.jar

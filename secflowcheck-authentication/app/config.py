@@ -23,6 +23,6 @@ class Settings(BaseSettings):
     INSTANCE_IP: str = "secflowcheck-authentication"
 
     class Config:
-        env_file = ".env"
+        env_file = "../.env"
 
 settings = Settings()

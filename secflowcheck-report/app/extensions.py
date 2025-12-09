@@ -2,7 +2,6 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from beanie import init_beanie
 from app.config import settings
 from app.models.report_doc import Report
-import asyncio
 
 async def init_db(app):
     client = AsyncIOMotorClient(settings.MONGO_URI)
@@ -11,6 +10,11 @@ async def init_db(app):
     app.state.db = db
     await init_beanie(database=db, document_models=[Report])
 
-def init_extensions(app):
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(init_db(app))
+
+def close_extensions(app):
+    """
+    Gracefully close MongoDB connections on shutdown.
+    """
+    client = getattr(app.state, "db_client", None)
+    if client:
+        client.close()

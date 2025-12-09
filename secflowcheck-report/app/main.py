@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.config import settings
-from app.extensions import init_extensions, close_extensions
+from app.extensions import init_db, close_extensions
 from app.errors import ExceptionMiddleware
 from app.middleware.auth import APIKeyMiddleware
 from app.routes import report_routes
@@ -10,7 +10,13 @@ import py_eureka_client.eureka_client as eureka_client
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Start Eureka Client
+    # INIT MONGODB FIRST
+    print("Initializing MongoDB...")
+    await init_db(app)
+    print("MongoDB initialized.")
+
+    # REGISTER TO EUREKA
+    print("Registering service to Eureka...")
     await eureka_client.init_async(
         eureka_server=settings.EUREKA_SERVER,
         app_name=settings.APP_NAME,
@@ -19,24 +25,38 @@ async def lifespan(app: FastAPI):
     )
     print("Registered with Eureka")
 
+    # App is ready
     yield
 
-    # Shutdown
+    # SHUTDOWN
+    print("Shutting down Eureka...")
     await eureka_client.stop_async()
+    print("Eureka stopped.")
+
+    print("Closing MongoDB...")
+    close_extensions(app)
+    print("MongoDB closed.")
+    
 
 def create_app():
-    app = FastAPI(title=settings.APP_TITLE, version=settings.VERSION, lifespan=lifespan)
-    init_extensions(app)
+    app = FastAPI(
+        title=settings.APP_TITLE,
+        version=settings.VERSION,
+        lifespan=lifespan
+    )
+
+    # Middlewares
     app.add_middleware(ExceptionMiddleware)
     app.add_middleware(APIKeyMiddleware)
+
+    # Routers
     app.include_router(report_routes.router)
-    # ensure DB closed on shutdown
-    @app.on_event("shutdown")
-    async def _shutdown():
-        close_extensions(app)
+
     return app
 
+
 app = create_app()
+
 
 @app.get("/")
 def root():

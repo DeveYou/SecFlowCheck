@@ -32,6 +32,8 @@ app = FastAPI(title=settings.APP_TITLE, lifespan=lifespan)
 
 app.include_router(auth_routes.router)
 
+print("Loaded settings:", settings.dict())
+
 @app.get("/health")
 def health_check():
     return {"status": "UP", "db": "PostgreSQL", "service": settings.APP_NAME}

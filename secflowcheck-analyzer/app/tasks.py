@@ -1,10 +1,10 @@
-from celeryconfig import celery_app
+from app.celeryconfig import celery_app
 import httpx
-import os
 from typing import Dict
+from app.config import settings
 
-REPORT_API = os.getenv("REPORT_API_URL", "http://report:8002/reports")
-REPORT_JWT = os.getenv("REPORT_JWT", None)  # if report API expects JWT
+REPORT_API = settings.REPORT_API_URL
+REPORT_JWT = settings.REPORT_JWT
 
 @celery_app.task(bind=True, acks_late=True, soft_time_limit=30)
 def forward_report(self, result: Dict, pipeline_name: str = None):
