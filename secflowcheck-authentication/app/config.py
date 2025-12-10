@@ -1,6 +1,6 @@
-from pydantic_settings import BaseSettings
+from pydantic import BaseModel
 
-class Settings(BaseSettings):
+class Settings(BaseModel):
     # App
     APP_TITLE: str = "SecFlowCheck Authentication Service"
     APP_NAME: str = "auth-service"

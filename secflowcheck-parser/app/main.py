@@ -1,5 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
+import py_eureka_client.eureka_client as eureka_client
 from app.config import settings
 from app.extensions import init_extensions
 from app.errors import ExceptionMiddleware

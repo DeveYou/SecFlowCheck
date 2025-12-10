@@ -14,7 +14,6 @@ import org.springframework.cloud.gateway.filter.GlobalFilter;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.HashSet;
 import java.util.Set;
 
