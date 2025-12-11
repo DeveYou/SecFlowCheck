@@ -60,6 +60,11 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getURI().getPath();
 
+        // Allow OPTIONS requests for CORS preflight checks
+        if (request.getMethod() == org.springframework.http.HttpMethod.OPTIONS) {
+            return chain.filter(exchange);
+        }
+
         if (isExcluded(path)) {
             return chain.filter(exchange);
         }
@@ -113,7 +118,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        // run early
-        return -100;
+        // Run after CORS filter
+        return 0;
     }
 }

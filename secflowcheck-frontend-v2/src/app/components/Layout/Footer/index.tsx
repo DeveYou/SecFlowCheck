@@ -31,40 +31,8 @@ const footer = () => {
           {/* COLUMN-1 */}
           <div className='col-span-4'>
             <h4 className='text-white text-3xl leading-9 mb-4 lg:mb-20'>
-              Desgy Solutions
+              SecFlowCheck
             </h4>
-            <div className='flex items-center gap-4'>
-              <div className='footer-icons'>
-                <Link href='https://facebook.com'>
-                  <Image
-                    src={'/images/footer/vec.svg'}
-                    alt='facebook'
-                    width={15}
-                    height={20}
-                  />
-                </Link>
-              </div>
-              <div className='footer-icons'>
-                <Link href='https://twitter.com'>
-                  <Image
-                    src={'/images/footer/twitter.svg'}
-                    alt='twitter'
-                    width={25}
-                    height={20}
-                  />
-                </Link>
-              </div>
-              <div className='footer-icons'>
-                <Link href='https://instagram.com'>
-                  <Image
-                    src={'/images/footer/instagram.svg'}
-                    alt='instagram'
-                    width={25}
-                    height={20}
-                  />
-                </Link>
-              </div>
-            </div>
           </div>
           {/* CLOUMN-2/3 */}
           {footerlinks.map((item, i) => (
@@ -93,27 +61,15 @@ const footer = () => {
           <div className='mt-4 grid grid-cols-1 gap-y-10 gap-x-16 sm:grid-cols-2 xl:gap-x-8'>
             <div>
               <p className='text-center md:text-start text-white text-lg'>
-                @2025 - All Rights Reserved by{' '}
+                @2025 - Tous droits réservés par{' '}
                 <Link
-                  href='https://getnextjstemplates.com/'
+                  href='#'
                   target='_blank'
                   className='hover:text-white/60 hover:underline'>
                   {' '}
-                  GetNextJsTemplates.com
+                  SecFlowCheck
                 </Link>
               </p>
-            </div>
-            <div className='flex justify-center md:justify-end'>
-              <Link href='/'>
-                <p className='text-base text-white pr-6 hover:text-white/60 hover:underline'>
-                  Privacy policy
-                </p>
-              </Link>
-              <Link href='/'>
-                <p className='text-base text-white pl-6 border-solid border-l border-footer hover:text-white/60 hover:underline'>
-                  Terms & conditions
-                </p>
-              </Link>
             </div>
           </div>
         </div>

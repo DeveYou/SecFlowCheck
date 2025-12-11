@@ -10,12 +10,13 @@ import MobileHeaderLink from './Navigation/MobileHeaderLink'
 import Signin from '@/app/components/Auth/SignIn'
 import SignUp from '@/app/components/Auth/SignUp'
 import { Icon } from '@iconify/react/dist/iconify.js'
+import { useAuthContext } from '@/app/context/AuthContext'
 
 const Header: React.FC = () => {
   const [navbarOpen, setNavbarOpen] = useState(false)
   const [sticky, setSticky] = useState(false)
-  const [isSignInOpen, setIsSignInOpen] = useState(false)
-  const [isSignUpOpen, setIsSignUpOpen] = useState(false)
+  const { isSignInOpen, setIsSignInOpen, isSignUpOpen, setIsSignUpOpen } =
+    useAuthContext()
 
   const navbarRef = useRef<HTMLDivElement>(null)
   const signInRef = useRef<HTMLDivElement>(null)
@@ -126,7 +127,12 @@ const Header: React.FC = () => {
                       className='text-black hover:text-primary text-24 inline-block me-2 cursor-pointer'
                     />
                   </button>
-                  <Signin />
+                  <Signin
+                    openSignUp={() => {
+                      setIsSignInOpen(false)
+                      setIsSignUpOpen(true)
+                    }}
+                  />
                 </div>
               </div>
             )}
@@ -151,7 +157,12 @@ const Header: React.FC = () => {
                       className='text-black hover:text-primary text-24 inline-block me-2 cursor-pointer'
                     />
                   </button>
-                  <SignUp />
+                  <SignUp
+                    openSignIn={() => {
+                      setIsSignUpOpen(false)
+                      setIsSignInOpen(true)
+                    }}
+                  />
                 </div>
               </div>
             )}

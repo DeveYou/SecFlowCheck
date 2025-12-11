@@ -90,6 +90,7 @@ services:
       POSTGRES_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_DB: ${POSTGRES_DB}
+      INSTANCE_IP: secflowcheck-authentication
     ports:
       - "${AUTH_PORT}:8000"
     networks:
@@ -102,6 +103,7 @@ services:
     environment:
       JWT_SECRET: ${JWT_SECRET}
       EUREKA_SERVER: "http://discovery:8761/eureka"
+      INSTANCE_IP: secflowcheck-parser
     ports:
       - "${PARSER_PORT}:8000"
     networks:
@@ -118,6 +120,7 @@ services:
       REPORT_API_URL: "http://report:8002/reports"
       REPORT_JWT: ${REPORT_JWT}
       DEBUG: ${DEBUG}
+      INSTANCE_IP: secflowcheck-analyzer
     ports:
       - "${ANALYZER_PORT}:8000"
     networks:
@@ -152,10 +155,22 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       DEBUG: ${DEBUG}
       API_KEY: ${API_KEY}
+      INSTANCE_IP: secflowcheck-report
     ports:
       - "${REPORT_PORT}:8002"
     networks:
       - secflowcheck-network
+
+  frontend:
+    build: ./secflowcheck-frontend-v2
+    depends_on:
+      - gateway
+    ports:
+      - "3000:3000"
+    networks:
+      - secflowcheck-network
+    environment:
+      - NODE_ENV=production
 
 volumes:
   mongo-data:

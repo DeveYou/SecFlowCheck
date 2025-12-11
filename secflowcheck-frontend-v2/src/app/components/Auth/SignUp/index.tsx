@@ -2,39 +2,61 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
-import SocialSignUp from '../SocialSignUp'
 import Logo from '@/app/components/Layout/Header/Logo'
 import { useState } from 'react'
 import Loader from '@/app/components/Common/Loader'
-const SignUp = () => {
+
+interface SignUpProps {
+  openSignIn?: () => void
+}
+
+const SignUp = ({ openSignIn }: SignUpProps) => {
   const router = useRouter()
+
+  const handleSignInClick = () => {
+    if (openSignIn) {
+      openSignIn()
+    } else {
+      router.push('/signin')
+    }
+  }
   const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e: any) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault()
 
     setLoading(true)
     const data = new FormData(e.currentTarget)
     const value = Object.fromEntries(data.entries())
-    const finalData = { ...value }
+    
+    try {
+      const res = await fetch('http://localhost:8080/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          full_name: value.name, // Mapping 'name' input to 'full_name' backend expectation
+          email: value.email,
+          password: value.password,
+        }),
+      })
 
-    fetch('/api/register', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(finalData),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        toast.success('Successfully registered')
-        setLoading(false)
-        router.push('/signin')
-      })
-      .catch((err) => {
-        toast.error(err.message)
-        setLoading(false)
-      })
+      const responseData = await res.json()
+
+      if (!res.ok) {
+        throw new Error(responseData.detail || "Échec de l'inscription")
+      }
+
+      // Success: Backend returns token immediately (Auto-login)
+      localStorage.setItem('token', responseData.access_token)
+      toast.success('Inscription réussie')
+      router.push('/dashboard')
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -43,19 +65,11 @@ const SignUp = () => {
         <Logo />
       </div>
 
-      <SocialSignUp />
-
-      <span className="z-1 relative my-8 block text-center before:content-[''] before:absolute before:h-px before:w-40% before:bg-dark_border/60 before:left-0 before:top-3 after:content-[''] after:absolute after:h-px after:w-40% after:bg-dark_border/60 after:top-3 after:right-0">
-        <span className='text-body-secondary relative z-10 inline-block px-3 text-base text-darkmode'>
-          OR
-        </span>
-      </span>
-
       <form onSubmit={handleSubmit}>
         <div className='mb-[22px]'>
           <input
             type='text'
-            placeholder='Name'
+            placeholder='Nom'
             name='name'
             required
             className='w-full rounded-md border border-dark_border/60 border-solid bg-transparent px-5 py-3 text-base text-dark outline-hidden transition border-darkmode placeholder:text-darkmode focus:border-darkmode focus-visible:shadow-none text-darkmode dark:focus:border-darkmode'
@@ -73,7 +87,7 @@ const SignUp = () => {
         <div className='mb-[22px]'>
           <input
             type='password'
-            placeholder='Password'
+            placeholder='Mot de passe'
             name='password'
             required
             className='w-full rounded-md border border-dark_border/60 border-solid bg-transparent px-5 py-3 text-base text-dark outline-hidden transition border-darkmode placeholder:text-darkmode focus:border-darkmode focus-visible:shadow-none text-darkmode dark:focus:border-darkmode'
@@ -83,27 +97,25 @@ const SignUp = () => {
           <button
             type='submit'
             className='flex w-full items-center text-18 font-medium justify-center rounded-md bg-darkmode px-5 py-3 text-white transition duration-300 ease-in-out hover:bg-transparent hover:text-darkmode border-darkmode border '>
-            Sign Up {loading && <Loader />}
+            S'inscrire {loading && <Loader />}
           </button>
         </div>
       </form>
 
       <p className='text-body-secondary mb-4 text-black text-base'>
-        By creating an account you are agree with our{' '}
+        En créant un compte, vous acceptez notre{' '}
         <a href='/#' className='text-primary hover:underline'>
-          Privacy
-        </a>{' '}
-        and{' '}
-        <a href='/#' className='text-primary hover:underline'>
-          Policy
+          Politique de confidentialité
         </a>
       </p>
 
       <p className='text-body-secondary text-black text-base'>
-        Already have an account?
-        <Link href='/' className='pl-2 text-primary hover:underline'>
-          Sign In
-        </Link>
+        Vous avez déjà un compte ?
+        <button
+          onClick={handleSignInClick}
+          className='pl-2 text-primary hover:underline'>
+          Se connecter
+        </button>
       </p>
     </>
   )

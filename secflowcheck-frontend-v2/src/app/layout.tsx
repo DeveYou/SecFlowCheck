@@ -1,10 +1,16 @@
 import { Manrope } from 'next/font/google'
 import './globals.css'
-import Header from '@/app/components/Layout/Header'
-import Footer from '@/app/components/Layout/Footer'
-import ScrollToTop from '@/app/components/ScrollToTop'
-import Aoscompo from '@/utils/aos'
+import { Metadata } from 'next'
+import { AuthContextProvider } from '@/app/context/AuthContext'
+
 const font = Manrope({ subsets: ['latin'] })
+
+export const metadata: Metadata = {
+  title: 'SecFlowCheck',
+  icons: {
+    icon: '/images/logo/log3.png',
+  },
+}
 
 export default function RootLayout({
   children,
@@ -14,13 +20,11 @@ export default function RootLayout({
   return (
     <html lang='en' suppressHydrationWarning>
       <body className={`${font.className}`}>
-        <Aoscompo>
-          <Header />
+        <AuthContextProvider>
           {children}
-          <Footer />
-        </Aoscompo>
-        <ScrollToTop />
+        </AuthContextProvider>
       </body>
     </html>
   )
 }
+

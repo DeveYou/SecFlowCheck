@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import py_eureka_client.eureka_client as eureka_client
 
@@ -29,6 +30,14 @@ async def lifespan(app: FastAPI):
     await eureka_client.stop_async()
 
 app = FastAPI(title=settings.APP_TITLE, lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(auth_routes.router)
 
