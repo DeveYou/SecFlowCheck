@@ -15,6 +15,6 @@ COPY .env .
 COPY wait-for-service.sh /wait-for-service.sh
 RUN chmod +x /wait-for-service.sh
 
-EXPOSE 8000
+EXPOSE 8003
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8003"]
