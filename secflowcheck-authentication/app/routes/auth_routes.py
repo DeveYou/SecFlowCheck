@@ -6,7 +6,7 @@ import jwt
 
 from app.database import get_db
 from app.models.user import User, UserRegister, UserLogin, TokenResponse, UserResponse
-from app.services.auth_service import verify_password, get_password_hash, create_access_token, create_refresh_token
+from app.services.auth_service import verify_password, get_password_hash, create_access_token, create_refresh_token, get_or_create_oauth_user
 from app.config import settings
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -72,3 +72,55 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
         return user
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Could not validate credentials")
+
+# --- OAuth Routes ---
+from fastapi import Request
+from fastapi.responses import RedirectResponse
+from app.extensions import oauth
+
+@router.get("/login/{provider}")
+async def login_oauth(provider: str, request: Request):
+    """
+    Initiates OAuth2 login flow.
+    """
+    # Ensure provider is valid
+    client = oauth.create_client(provider)
+    if not client:
+        raise HTTPException(status_code=404, detail=f"Provider {provider} not found")
+    
+    redirect_uri = request.url_for('auth_callback', provider=provider)
+    return await client.authorize_redirect(request, redirect_uri)
+
+@router.get("/callback/{provider}", name="auth_callback")
+async def auth_callback(provider: str, request: Request, db: AsyncSession = Depends(get_db)):
+    """
+    Callback for OAuth2 providers.
+    """
+    client = oauth.create_client(provider)
+    if not client:
+        raise HTTPException(status_code=404, detail="Provider not found")
+    
+    try:
+        token = await client.authorize_access_token(request)
+        user_info = await client.userinfo(token=token)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"OAuth Handshake Failed: {str(e)}")
+
+    # Extract user details (normalize fields)
+    email = user_info.get('email')
+    name = user_info.get('name') or user_info.get('login') or "Unknown"
+    provider_id = str(user_info.get('sub') or user_info.get('id'))
+    
+    if not email:
+        raise HTTPException(status_code=400, detail="Email not provided by OAuth provider")
+
+    # Get or create user
+    user = await get_or_create_oauth_user(db, email, name, provider, provider_id)
+
+    # Generate JWT
+    access_token = create_access_token(data={"sub": user.email, "roles": user.roles})
+    
+    # Redirect to frontend with token
+    # In production, use a secure way to pass the token (e.g., cookie or fragment)
+    response = RedirectResponse(url=f"{settings.FRONTEND_URL}/auth/callback?token={access_token}")
+    return response

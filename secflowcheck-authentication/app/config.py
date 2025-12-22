@@ -22,7 +22,21 @@ class Settings(BaseSettings):
     SERVICE_PORT: int = 8001
     INSTANCE_IP: str = "secflowcheck-authentication"
 
+    # OAuth2 / OIDC
+    GOOGLE_CLIENT_ID: str | None = None
+    GOOGLE_CLIENT_SECRET: str | None = None
+    GITHUB_CLIENT_ID: str | None = None
+    GITHUB_CLIENT_SECRET: str | None = None
+    GITLAB_CLIENT_ID: str | None = None
+    GITLAB_CLIENT_SECRET: str | None = None
+    
+    # Session Middleware
+    SESSION_SECRET: str = "supersecret-session-key"
+    
+    # Frontend Redirection
+    FRONTEND_URL: str = "http://localhost:3000"
+
     class Config:
-        env_file = "../.env"
+        env_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
 
 settings = Settings()

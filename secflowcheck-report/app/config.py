@@ -15,6 +15,6 @@ class Settings(BaseSettings):
     INSTANCE_IP: str = "secflowcheck-report"
 
     class Config:
-        env_file = "../.env"
+        env_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
 
 settings = Settings()
