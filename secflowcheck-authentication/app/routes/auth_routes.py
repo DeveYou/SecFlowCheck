@@ -88,7 +88,8 @@ async def login_oauth(provider: str, request: Request):
     if not client:
         raise HTTPException(status_code=404, detail=f"Provider {provider} not found")
     
-    redirect_uri = request.url_for('auth_callback', provider=provider)
+    # Use external Gateway URL for redirect (not internal Docker URL)
+    redirect_uri = f"http://localhost:8080/auth/callback/{provider}"
     return await client.authorize_redirect(request, redirect_uri)
 
 @router.get("/callback/{provider}", name="auth_callback")
@@ -102,15 +103,48 @@ async def auth_callback(provider: str, request: Request, db: AsyncSession = Depe
     
     try:
         token = await client.authorize_access_token(request)
-        user_info = await client.userinfo(token=token)
+        
+        # Handle different providers
+        if provider == 'google':
+            user_info = token.get('userinfo')
+            if not user_info:
+                user_info = await client.userinfo(token=token)
+            email = user_info.get('email')
+            name = user_info.get('name', 'Unknown')
+            provider_id = str(user_info.get('sub'))
+            
+        elif provider == 'github':
+            # GitHub requires separate API call
+            resp = await client.get('user', token=token)
+            user_info = resp.json()
+            
+            # GitHub may not return email in profile, need separate call
+            email = user_info.get('email')
+            if not email:
+                emails_resp = await client.get('user/emails', token=token)
+                emails = emails_resp.json()
+                primary_email = next((e for e in emails if e.get('primary')), None)
+                email = primary_email.get('email') if primary_email else None
+            
+            name = user_info.get('name') or user_info.get('login', 'Unknown')
+            provider_id = str(user_info.get('id'))
+            
+        elif provider == 'gitlab':
+            # GitLab requires separate API call
+            resp = await client.get('user', token=token)
+            user_info = resp.json()
+            email = user_info.get('email')
+            name = user_info.get('name', 'Unknown')
+            provider_id = str(user_info.get('id'))
+            
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported provider: {provider}")
+            
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=400, detail=f"OAuth Handshake Failed: {str(e)}")
 
-    # Extract user details (normalize fields)
-    email = user_info.get('email')
-    name = user_info.get('name') or user_info.get('login') or "Unknown"
-    provider_id = str(user_info.get('sub') or user_info.get('id'))
-    
     if not email:
         raise HTTPException(status_code=400, detail="Email not provided by OAuth provider")
 
@@ -121,6 +155,5 @@ async def auth_callback(provider: str, request: Request, db: AsyncSession = Depe
     access_token = create_access_token(data={"sub": user.email, "roles": user.roles})
     
     # Redirect to frontend with token
-    # In production, use a secure way to pass the token (e.g., cookie or fragment)
     response = RedirectResponse(url=f"{settings.FRONTEND_URL}/auth/callback?token={access_token}")
     return response
