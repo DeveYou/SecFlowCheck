@@ -15,7 +15,7 @@ services:
     networks:
       - secflowcheck-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U secflowcheck -d secflowcheck_auth_db"]
+      test: [ "CMD-SHELL", "pg_isready -U secflowcheck -d secflowcheck_auth_db" ]
       interval: 5s
       retries: 5
 
@@ -84,11 +84,10 @@ services:
     networks:
       - secflowcheck-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8761/actuator/health || exit 1"]
+      test: [ "CMD-SHELL", "curl -f http://localhost:8761/actuator/health || exit 1" ]
       interval: 10s
       retries: 10
       start_period: 30s
-
 
   gateway:
     build: ./secflowcheck-gateway
@@ -110,7 +109,8 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
-    entrypoint: ["/wait-for-service.sh", "postgres", "5432", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    entrypoint: [ "/wait-for-service.sh", "postgres", "5432" ]
+    command: [ "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000" ]
     environment:
       JWT_SECRET: ${JWT_SECRET}
       DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
@@ -185,7 +185,8 @@ services:
         condition: service_healthy
       analyzer:
         condition: service_started
-    entrypoint: ["/wait-for-service.sh", "mongo", "27017", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002"]
+    entrypoint: [ "/wait-for-service.sh", "mongo", "27017" ] 
+    command: [ "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002" ]
     environment:
       PYTHONUNBUFFERED: 1
       MONGO_URI: "mongodb://mongo:27017"
@@ -204,7 +205,7 @@ volumes:
   postgres-data:
   pgadmin-data:
 
+
 networks:
   secflowcheck-network:
     driver: bridge
-

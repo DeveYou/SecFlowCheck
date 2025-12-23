@@ -1,72 +1,38 @@
-import re
-from typing import List, Dict
-from app.models.finding_model import Finding
+from typing import Dict
+from app.ml.model_loader import load_model
+from app.ml.findings_generator import generate_findings_from_features
 
-# Basic rule definitions
-RULES = [
-    {
-        "id": "SECRET_PLAINTEXT",
-        "pattern": r"(?i)(password|secret|token)\s*[:=]\s*['\"].+['\"]",
-        "description": "Plaintext secret detected in environment or variable.",
-        "severity": "critical"
-    },
-    {
-        "id": "PERMISSIONS_ALL",
-        "pattern": r"permissions:\s*write-all",
-        "description": "Overly permissive 'write-all' permission found.",
-        "severity": "major"
-    },
-    {
-        "id": "MISSING_SECURITY_STEPS",
-        "pattern": r"(lint|scan|test)",
-        "description": "Missing security validation steps (lint/scan/test).",
-        "severity": "minor",
-        "negative_rule": True  # triggered if missing
-    }
-]
+
+
+LABEL_MAP = {
+    0: "A",
+    1: "B",
+    2: "C",
+    3: "D"
+}
+
 
 def analyze_pipeline(pipeline: Dict) -> Dict:
-    findings: List[Finding] = []
-    text_repr = str(pipeline)  # Flatten YAML data for regex scan
+    if "ml_features" not in pipeline:
+        raise ValueError("Pipeline does not contain ml_features")
 
-    # Apply regex-based rules
-    for rule in RULES:
-        if rule.get("negative_rule"):
-            if not re.search(rule["pattern"], text_repr, re.IGNORECASE):
-                findings.append(Finding(
-                    rule_id=rule["id"],
-                    severity=rule["severity"],
-                    description=rule["description"]
-                ))
-        else:
-            matches = re.findall(rule["pattern"], text_repr, re.IGNORECASE)
-            if matches:
-                findings.append(Finding(
-                    rule_id=rule["id"],
-                    severity=rule["severity"],
-                    description=rule["description"]
-                ))
+    features = pipeline["ml_features"]
 
-    # Simple scoring (A–E) based on severity count
-    score = compute_score(findings)
+    bundle = load_model()
+    model = bundle["model"]
+    feature_order = bundle["features"]
+
+    # Build feature vector in correct order
+    X = [[features[f] for f in feature_order]]
+
+    prediction = model.predict(X)[0]
+    score = LABEL_MAP.get(prediction, "E")
+
+    findings = generate_findings_from_features(features)
+
     return {
         "pipeline_type": pipeline.get("pipeline_type", "Unknown"),
         "score": score,
         "total_findings": len(findings),
         "findings": [f.dict() for f in findings]
     }
-
-def compute_score(findings: List[Finding]) -> str:
-    critical = sum(1 for f in findings if f.severity == "critical")
-    major = sum(1 for f in findings if f.severity == "major")
-
-    if critical > 0:
-        return "E"
-    elif major > 2:
-        return "D"
-    elif len(findings) > 3:
-        return "C"
-    elif len(findings) > 1:
-        return "B"
-    else:
-        return "A"

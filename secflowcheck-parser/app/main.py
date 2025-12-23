@@ -1,39 +1,19 @@
-from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from contextlib import asynccontextmanager
-import py_eureka_client.eureka_client as eureka_client
-from app.config import settings
-from app.extensions import init_extensions
-from app.errors import ExceptionMiddleware
-from app.routes import parser_routes
-import py_eureka_client.eureka_client as eureka_client
+from app.services.parser_service import ParserService
+from app.schemas import ParsedPipeline
+from pydantic import BaseModel
 
+app = FastAPI()
+parser_service = ParserService()
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Start Eureka Client
-    await eureka_client.init_async(
-        eureka_server=settings.EUREKA_SERVER,
-        app_name=settings.APP_NAME,
-        instance_port=settings.SERVICE_PORT,
-        instance_host=settings.INSTANCE_IP
-    )
-    print("Registered with Eureka")
+class ParseRequest(BaseModel):
+    content: str
+    filename: str = "unknown.yml"
 
-    yield
+@app.post("/parse", response_model=ParsedPipeline)
+def parse_yaml(request: ParseRequest):
+    return parser_service.parse_and_extract(request.content, request.filename)
 
-    # Shutdown
-    await eureka_client.stop_async()
-
-def create_app():
-    app = FastAPI(title=settings.APP_TITLE, version=settings.VERSION, lifespan=lifespan)
-    init_extensions(app)
-    app.add_middleware(ExceptionMiddleware)
-    app.include_router(parser_routes.router)
-    return app
-
-app = create_app()
-
-@app.get("/")
-def root():
-    return {"message": f"{settings.APP_NAME} is running!"}
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}

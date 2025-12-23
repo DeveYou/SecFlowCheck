@@ -2,7 +2,10 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional, Any, Dict
 import jwt 
 from passlib.context import CryptContext
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from app.config import settings
+from app.models.user import User
 
 # 1. Configuration for Password Hashing
 # "bcrypt" is robust and standard for microservices
@@ -72,3 +75,38 @@ def create_refresh_token(data: Dict[str, Any]) -> str:
         algorithm=settings.ALGORITHM
     )
     return encoded_jwt
+
+async def get_or_create_oauth_user(db: AsyncSession, email: str, full_name: str, provider: str, provider_id: str) -> User:
+    """
+    Retrieves a user by email, or creates a new one if not exists.
+    Links the OAuth provider to the user.
+    """
+    # Check if user exists
+    query = select(User).where(User.email == email)
+    result = await db.execute(query)
+    user = result.scalars().first()
+
+    if user:
+        # Link account if not already linked (or update provider/provider_id)
+        if user.provider != provider:
+             user.provider = provider
+             user.provider_id = provider_id
+             db.add(user)
+             await db.commit()
+             await db.refresh(user)
+        return user
+    
+    # Create new user
+    new_user = User(
+        email=email,
+        full_name=full_name,
+        hashed_password=None, # OAuth users don't have password
+        provider=provider,
+        provider_id=provider_id,
+        roles=["user"]
+    )
+    
+    db.add(new_user)
+    await db.commit()
+    await db.refresh(new_user)
+    return new_user

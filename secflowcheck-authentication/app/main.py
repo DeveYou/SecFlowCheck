@@ -29,6 +29,9 @@ async def lifespan(app: FastAPI):
     # Shutdown
     await eureka_client.stop_async()
 
+from starlette.middleware.sessions import SessionMiddleware
+from app.extensions import init_extensions
+
 app = FastAPI(title=settings.APP_TITLE, lifespan=lifespan)
 
 app.add_middleware(
@@ -38,6 +41,12 @@ app.add_middleware(
      allow_methods=["*"],
      allow_headers=["*"],
  )
+
+# Add Session Middleware for OAuth
+app.add_middleware(SessionMiddleware, secret_key=settings.SESSION_SECRET)
+
+# Initialize Extensions (Authlib)
+init_extensions()
 
 app.include_router(auth_routes.router)
 

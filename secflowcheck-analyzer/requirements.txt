@@ -6,3 +6,4 @@ celery[redis]
 flower
 python-dotenv
 py-eureka-client
+joblib

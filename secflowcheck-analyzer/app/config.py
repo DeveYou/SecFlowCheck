@@ -1,3 +1,4 @@
+import os
 from pydantic import BaseSettings
 
 class Settings(BaseSettings):
@@ -13,12 +14,15 @@ class Settings(BaseSettings):
     REPORT_API_URL: str
     REPORT_JWT: str
 
+    # ML Model Path
+    SECFLOWCHECK_MODEL_PATH: str
+
     # Eureka (Service Discovery)
     EUREKA_SERVER: str = "http://discovery:8761/eureka"
     SERVICE_PORT: int = 8003
     INSTANCE_IP: str = "secflowcheck-analyzer"
 
     class Config:
-        env_file = "../.env"
+        env_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
 
 settings = Settings()
