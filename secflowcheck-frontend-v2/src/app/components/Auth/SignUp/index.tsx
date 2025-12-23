@@ -28,7 +28,7 @@ const SignUp = ({ openSignIn }: SignUpProps) => {
     setLoading(true)
     const data = new FormData(e.currentTarget)
     const value = Object.fromEntries(data.entries())
-    
+
     try {
       const res = await fetch('http://localhost:8080/auth/register', {
         method: 'POST',
