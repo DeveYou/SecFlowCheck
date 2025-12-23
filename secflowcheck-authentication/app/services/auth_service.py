@@ -15,13 +15,17 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     Verifies a plain-text password against the stored hash.
     """
-    return pwd_context.verify(plain_password, hashed_password)
+    if not hashed_password:
+        return False
+    truncated = plain_password[:72]
+    return pwd_context.verify(truncated, hashed_password)
 
 def get_password_hash(password: str) -> str:
     """
     Generates a secure hash from a plain-text password.
     """
-    return pwd_context.hash(password)
+    truncated = password[:72]
+    return pwd_context.hash(truncated)
 
 def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
     """

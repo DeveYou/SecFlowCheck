@@ -12,7 +12,7 @@ class Settings(BaseSettings):
 
     # Eureka (Service Discovery)
     EUREKA_SERVER: str = "http://discovery:8761/eureka"
-    SERVICE_PORT: int = 8004
+    SERVICE_PORT: int = 8003
     INSTANCE_IP: str = "report"
     INSTANCE_HOST: str = "report"
 

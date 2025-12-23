@@ -114,7 +114,7 @@ services:
     environment:
       CELERY_BROKER: ${CELERY_BROKER}
       CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
-      REPORT_API_URL: "http://report:8002/reports"
+      REPORT_API_URL: "http://report:8003/reports"
       REPORT_JWT: ${REPORT_JWT}
       DEBUG: ${DEBUG}
     ports:
@@ -131,7 +131,7 @@ services:
     environment:
       CELERY_BROKER: ${CELERY_BROKER}
       CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
-      REPORT_API_URL: "http://report:8002/reports"
+      REPORT_API_URL: "http://report:8003/reports"
       REPORT_JWT: ${REPORT_JWT}
       DEBUG: ${DEBUG}
     networks:
@@ -144,7 +144,7 @@ services:
       - discovery
       - analyzer
     entrypoint: [ "/wait-for-service.sh", "mongo", "27017" ]
-    command: [ "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002" ]
+    command: [ "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8003" ]
     environment:
       MONGO_URI: "mongodb://mongo:27017"
       MONGO_DB: ${MONGO_DB}
@@ -152,7 +152,7 @@ services:
       DEBUG: ${DEBUG}
       API_KEY: ${API_KEY}
     ports:
-      - "${REPORT_PORT}:8002"
+      - "${REPORT_PORT}:8000"
     networks:
       - secflowcheck-network
 

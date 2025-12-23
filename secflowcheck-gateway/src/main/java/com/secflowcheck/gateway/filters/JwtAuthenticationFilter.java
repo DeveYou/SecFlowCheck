@@ -14,7 +14,6 @@ import org.springframework.cloud.gateway.filter.GlobalFilter;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -51,9 +50,13 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     private boolean isExcluded(String path) {
+        if (path == null) {
+            return false;
+        }
         for (String pattern : EXCLUDED_PATHS) {
-            if (pathMatcher.match(pattern, path))
+            if (pattern != null && pathMatcher.match(pattern, path)) {
                 return true;
+            }
         }
         return false;
     }

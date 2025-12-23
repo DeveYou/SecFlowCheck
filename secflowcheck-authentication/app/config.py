@@ -20,7 +20,7 @@ class Settings(BaseSettings):
 
     # Eureka (Service Discovery)
     EUREKA_SERVER: str = "http://discovery:8761/eureka"
-    SERVICE_PORT: int = 8001
+    SERVICE_PORT: int = 8000
     INSTANCE_IP: str = "auth"
     INSTANCE_HOST: str = "auth"
 
@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     GITHUB_CLIENT_SECRET: str | None = None
     GITLAB_CLIENT_ID: str | None = None
     GITLAB_CLIENT_SECRET: str | None = None
+    GATEWAY_URL: str | None = None
     
     # Session Middleware
     SESSION_SECRET: str = "supersecret-session-key"

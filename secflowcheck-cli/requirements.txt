@@ -3,4 +3,4 @@ pyyaml
 rich
 python-dotenv
 typer
-pydantic
+pydantic-settings

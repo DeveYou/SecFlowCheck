@@ -1,14 +1,15 @@
-FROM eclipse-temurin:17-jdk-jammy
-
-RUN apt-get update && apt-get install -y --no-install-recommends curl && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-ARG JAR_FILE=target/*.jar
+# Stage 1: Build the application
+FROM eclipse-temurin:17-jdk-jammy AS builder
 WORKDIR /app
+COPY .mvn/ .mvn/
+COPY mvnw pom.xml ./
+RUN ./mvnw dependency:go-offline
+COPY src ./src
+RUN ./mvnw clean package -DskipTests
 
-COPY ${JAR_FILE} app.jar
-
-ENV JAVA_OPTS=""
-
+# Stage 2: Run the application
+FROM eclipse-temurin:17-jdk-jammy
+WORKDIR /app
+COPY --from=builder /app/target/*.jar app.jar
 EXPOSE 8761
-
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]

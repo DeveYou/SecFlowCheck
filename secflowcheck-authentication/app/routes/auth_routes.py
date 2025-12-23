@@ -1,16 +1,26 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Request
+from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import jwt
+import json
+import base64
 
 from app.database import get_db
 from app.models.user import User, UserRegister, UserLogin, TokenResponse, UserResponse
-from app.services.auth_service import verify_password, get_password_hash, create_access_token, create_refresh_token, get_or_create_oauth_user
+from app.services.auth_service import (
+    verify_password, 
+    get_password_hash, 
+    create_access_token, 
+    create_refresh_token, 
+    get_or_create_oauth_user
+)
 from app.config import settings
+from app.extensions import oauth
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+router = APIRouter(tags=["Authentication"])
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
 @router.post("/register", response_model=TokenResponse)
 async def register(user_data: UserRegister, db: AsyncSession = Depends(get_db)):
@@ -73,26 +83,39 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Could not validate credentials")
 
-# --- OAuth Routes ---
-from fastapi import Request
-from fastapi.responses import RedirectResponse
-from app.extensions import oauth
 
-@router.get("/login/{provider}")
-async def login_oauth(provider: str, request: Request):
+# --- OAuth Routes ---
+
+@router.get("/login/oauth/{provider}")
+async def login_oauth(provider: str, request: Request, cli: bool = False):
     """
     Initiates OAuth2 login flow.
     """
-    # Ensure provider is valid
+    # Validate Provider
     client = oauth.create_client(provider)
     if not client:
         raise HTTPException(status_code=404, detail=f"Provider {provider} not found")
     
-    redirect_uri = request.url_for('auth_callback', provider=provider)
-    return await client.authorize_redirect(request, redirect_uri)
+    # Construct Redirect URI 
+    # (MUST match exactly what you registered in Google/GitHub console)
+    # Using request.url_for is risky behind a Gateway. Better to use strict config:
+    redirect_uri = f"{settings.GATEWAY_URL}/auth/callback/{provider}"
+
+    # Create 'State' to remember if this is a CLI request
+    # We encode it to base64 or simple JSON string to pass through the provider
+    state_data = {"is_cli": cli}
+    state_str = base64.urlsafe_b64encode(json.dumps(state_data).encode()).decode()
+
+    # Redirect to Provider with State
+    return await client.authorize_redirect(request, redirect_uri, state=state_str)
+
 
 @router.get("/callback/{provider}", name="auth_callback")
-async def auth_callback(provider: str, request: Request, db: AsyncSession = Depends(get_db)):
+async def auth_callback(
+    provider: str, 
+    request: Request, 
+    db: AsyncSession = Depends(get_db)
+):
     """
     Callback for OAuth2 providers.
     """
@@ -101,26 +124,49 @@ async def auth_callback(provider: str, request: Request, db: AsyncSession = Depe
         raise HTTPException(status_code=404, detail="Provider not found")
     
     try:
+        # Exchange code for token
         token = await client.authorize_access_token(request)
         user_info = await client.userinfo(token=token)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"OAuth Handshake Failed: {str(e)}")
 
-    # Extract user details (normalize fields)
+    # Extract user details (Normalize GitHub/GitLab/Google)
     email = user_info.get('email')
-    name = user_info.get('name') or user_info.get('login') or "Unknown"
+    
+    # Fallback for GitHub (if email is private)
+    if not email and provider == "github":
+        email = f"{user_info.get('login')}@github.placeholder.com"
+
+    name = user_info.get('name') or user_info.get('login') or "Unknown User"
     provider_id = str(user_info.get('sub') or user_info.get('id'))
     
     if not email:
         raise HTTPException(status_code=400, detail="Email not provided by OAuth provider")
 
-    # Get or create user
+    # Get or create user in DB
     user = await get_or_create_oauth_user(db, email, name, provider, provider_id)
 
-    # Generate JWT
+    # Generate YOUR Security JWT
     access_token = create_access_token(data={"sub": user.email, "roles": user.roles})
     
-    # Redirect to frontend with token
-    # In production, use a secure way to pass the token (e.g., cookie or fragment)
-    response = RedirectResponse(url=f"{settings.FRONTEND_URL}/auth/callback?token={access_token}")
-    return response
+    # Check 'State' to determine redirection target
+    is_cli = False
+    state = request.query_params.get("state")
+    
+    if state:
+        try:
+            # Decode the state we sent earlier
+            decoded_state = json.loads(base64.urlsafe_b64decode(state).decode())
+            is_cli = decoded_state.get("is_cli", False)
+        except Exception:
+            pass # If state is invalid, default to False
+
+    # Redirect to appropriate destination
+    if is_cli:
+        # Redirect to the local CLI server
+        target_url = f"http://localhost:8765/callback?token={access_token}"
+    else:
+        # Redirect to the Frontend Dashboard
+        target_url = f"{settings.FRONTEND_URL}/auth/callback?token={access_token}"
+
+    return RedirectResponse(url=target_url)
