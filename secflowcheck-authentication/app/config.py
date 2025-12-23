@@ -19,7 +19,7 @@ class Settings(BaseSettings):
 
     # Eureka (Service Discovery)
     EUREKA_SERVER: str = "http://discovery:8761/eureka"
-    SERVICE_PORT: int = 8001
+    SERVICE_PORT: int = 8000
     INSTANCE_IP: str = "secflowcheck-authentication"
 
     class Config:

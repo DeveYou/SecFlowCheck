@@ -1,5 +1,6 @@
 import { Manrope } from 'next/font/google'
 import './globals.css'
+import 'aos/dist/aos.css'; // Import AOS styles globally
 import { Metadata } from 'next'
 import { AuthContextProvider } from '@/app/context/AuthContext'
 

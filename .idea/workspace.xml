@@ -4,7 +4,25 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3a518cec-2dca-415b-a7f5-adebc298d1ce" name="Changes" comment="" />
+    <list default="true" id="3a518cec-2dca-415b-a7f5-adebc298d1ce" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker-compose.dev.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secflowcheck-authentication/app/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/secflowcheck-authentication/app/config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secflowcheck-authentication/app/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/secflowcheck-authentication/app/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secflowcheck-authentication/app/routes/auth_routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/secflowcheck-authentication/app/routes/auth_routes.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secflowcheck-authentication/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/secflowcheck-authentication/requirements.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secflowcheck-frontend-v2/Dockerfile" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/secflowcheck-frontend-v2/next.config.mjs" beforeDir="false" afterPath="$PROJECT_DIR$/secflowcheck-frontend-v2/next.config.mjs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secflowcheck-frontend-v2/src/app/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/secflowcheck-frontend-v2/src/app/layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secflowcheck-frontend-v2/src/utils/aos.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/secflowcheck-frontend-v2/src/utils/aos.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secflowcheck-gateway/src/main/java/com/secflowcheck/gateway/config/CorsConfiguration.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/secflowcheck-gateway/src/main/resources/application.properties" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/secflowcheck-gateway/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/secflowcheck-gateway/src/main/resources/application.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secflowcheck-parser/app/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/secflowcheck-parser/app/config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secflowcheck-report/app/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/secflowcheck-report/app/config.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -16,22 +34,22 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "DeveYou"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;DeveYou&quot;
   }
-}]]></component>
+}</component>
   <component name="GithubPullRequestsUISettings"><![CDATA[{
   "selectedUrlAndAccountId": {
     "url": "https://github.com/DeveYou/SecFlowCheck.git",
-    "accountId": "ec684edb-00af-41df-9b5d-d056efe34757"
+    "accountId": "4cdd76e3-d628-4489-80c6-34d218a1de35"
   }
 }]]></component>
   <component name="PhpWorkspaceProjectConfiguration" interpreter_name="E:\xampp\php\php.exe" />
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 4
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 4
+}</component>
   <component name="ProjectId" id="36WtDcaOg8qqPIYloNhQ9szR4TI" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -39,14 +57,17 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
     "dart.analysis.tool.window.visible": "false",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "radouane",
     "ignore.virus.scanning.warn.message": "true",
     "junie.onboarding.icon.badge.shown": "true",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "E:/IT/EMSI/5th year/Architecture des composants d'entreprise/Project Microservices/SecFlowCheck",
+    "last_opened_file_path": "C:/Emsi/Architecture-des-composants/Projet/SecFlowCheck",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -56,14 +77,15 @@
     "project.structure.proportion": "0.15",
     "project.structure.side.proportion": "0.0",
     "show.migrate.to.gradle.popup": "false",
+    "to.speed.mode.migration.done": "true",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-jdk-9823dce3aa75-a94e463ab2e7-intellij.indexing.shared.core-IU-243.25659.59" />
-        <option value="bundled-js-predefined-d6986cc7102b-1632447f56bf-JavaScript-IU-243.25659.59" />
+        <option value="bundled-jdk-9823dce3aa75-bf35d07a577b-intellij.indexing.shared.core-IU-252.28238.7" />
+        <option value="bundled-js-predefined-d6986cc7102b-a71380e98a7c-JavaScript-IU-252.28238.7" />
       </set>
     </attachedChunks>
   </component>
@@ -76,6 +98,7 @@
       <option name="presentableId" value="Default" />
       <updated>1765134040092</updated>
       <workItem from="1765134042199" duration="6041000" />
+      <workItem from="1766163588970" duration="1115000" />
     </task>
     <servers />
   </component>
@@ -86,5 +109,13 @@
     <option name="hasEnabledGraphQLPluginApolloKotlinSupport" value="true" />
     <option name="lspPassPathToSuperGraphYaml" value="false" />
     <option name="telemetryInstanceId" value="20d9b0b4-4bd5-4992-9d16-908ab48f9395" />
+  </component>
+  <component name="github-copilot-workspace">
+    <instructionFileLocations>
+      <option value=".github/instructions" />
+    </instructionFileLocations>
+    <promptFileLocations>
+      <option value=".github/prompts" />
+    </promptFileLocations>
   </component>
 </project>

@@ -9,10 +9,10 @@ from app.models.user import User, UserRegister, UserLogin, TokenResponse, UserRe
 from app.services.auth_service import verify_password, get_password_hash, create_access_token, create_refresh_token
 from app.config import settings
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+router = APIRouter(tags=["Authentication"])
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
-@router.post("/register", response_model=TokenResponse)
+@router.post("/register", response_model=UserResponse)
 async def register(user_data: UserRegister, db: AsyncSession = Depends(get_db)):
     # Check if user exists
     query = select(User).where(User.email == user_data.email)
@@ -35,10 +35,10 @@ async def register(user_data: UserRegister, db: AsyncSession = Depends(get_db)):
     await db.refresh(new_user)
     
     # Generate tokens
-    access_token = create_access_token(data={"sub": new_user.email, "roles": new_user.roles})
-    refresh_token = create_refresh_token(data={"sub": new_user.email})
+    #access_token = create_access_token(data={"sub": new_user.email, "roles": new_user.roles})
+    #refresh_token = create_refresh_token(data={"sub": new_user.email})
     
-    return TokenResponse(access_token=access_token, refresh_token=refresh_token)
+    return new_user
 
 @router.post("/login", response_model=TokenResponse)
 async def login(user_data: UserLogin, db: AsyncSession = Depends(get_db)):

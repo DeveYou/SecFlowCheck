@@ -4,6 +4,7 @@ pydantic>=2.0
 httpx
 pyjwt
 passlib[bcrypt]
+bcrypt==4.0.1
 python-dotenv
 py-eureka-client
 sqlalchemy
