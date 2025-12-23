@@ -37,11 +37,6 @@ spring:
           predicates:
             - Path=/auth/**
 
-        - id: cli-service
-          uri: lb://cli-service
-          predicates:
-            - Path=/cli/**
-
 management:
   endpoints:
     web:

@@ -42,7 +42,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         // read secret from environment for simplicity
         String secret = System.getenv("JWT_SECRET");
         if (secret == null || secret.isBlank()) {
-            logger.warn("JWT_SECRET not set. Gateway will still run but token validation will fail unless JWT_SECRET is provided.");
+            logger.warn(
+                    "JWT_SECRET not set. Gateway will still run but token validation will fail unless JWT_SECRET is provided.");
             secret = "";
         }
         // ensure bytes safe for JJWT
@@ -51,13 +52,15 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private boolean isExcluded(String path) {
         for (String pattern : EXCLUDED_PATHS) {
-            if (pathMatcher.match(pattern, path)) return true;
+            if (pathMatcher.match(pattern, path))
+                return true;
         }
         return false;
     }
 
     @Override
-    public Mono<Void> filter(ServerWebExchange exchange, org.springframework.cloud.gateway.filter.GatewayFilterChain chain) {
+    public Mono<Void> filter(ServerWebExchange exchange,
+            org.springframework.cloud.gateway.filter.GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getURI().getPath();
 

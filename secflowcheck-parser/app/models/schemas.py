@@ -10,7 +10,7 @@ class FeatureVector(BaseModel):
 class Finding(BaseModel):
     type: str # 'secret', 'permission', 'structure'
     message: str
-    location: str # e.g. "job: build, step: 2"
+    location: str # "job: build, step: 2"
     severity: str # "CRITICAL", "HIGH", "MEDIUM"
 
 class ParsedPipeline(BaseModel):
@@ -18,3 +18,8 @@ class ParsedPipeline(BaseModel):
     content: Dict[str, Any]
     features: FeatureVector
     findings: List[Finding]
+
+
+class ParseRequest(BaseModel):
+    content: str
+    filename: str = "unknown.yml"

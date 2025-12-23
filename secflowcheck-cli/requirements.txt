@@ -2,3 +2,5 @@ requests
 pyyaml
 rich
 python-dotenv
+typer
+pydantic

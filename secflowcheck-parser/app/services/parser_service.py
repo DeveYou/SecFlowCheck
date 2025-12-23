@@ -1,7 +1,7 @@
 import yaml
 import re
 from fastapi import HTTPException
-from app.schemas import ParsedPipeline, FeatureVector, Finding
+from app.models.schemas import ParsedPipeline, FeatureVector, Finding
 
 class ParserService:
     # Improved regex to avoid false positives on simple keys like 'password_input' vs actual values

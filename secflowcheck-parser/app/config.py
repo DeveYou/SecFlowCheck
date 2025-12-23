@@ -10,7 +10,8 @@ class Settings(BaseSettings):
     # Eureka (Service Discovery)
     EUREKA_SERVER: str = "http://discovery:8761/eureka"
     SERVICE_PORT: int = 8002
-    INSTANCE_IP: str = "secflowcheck-parser"
+    INSTANCE_IP: str = "parser"
+    INSTANCE_HOST: str = "parser"
 
     class Config:
         env_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")

@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+import os
 
 class Settings(BaseSettings):
     # App
@@ -20,7 +21,8 @@ class Settings(BaseSettings):
     # Eureka (Service Discovery)
     EUREKA_SERVER: str = "http://discovery:8761/eureka"
     SERVICE_PORT: int = 8001
-    INSTANCE_IP: str = "secflowcheck-authentication"
+    INSTANCE_IP: str = "auth"
+    INSTANCE_HOST: str = "auth"
 
     # OAuth2 / OIDC
     GOOGLE_CLIENT_ID: str | None = None

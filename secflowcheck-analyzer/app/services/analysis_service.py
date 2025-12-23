@@ -1,6 +1,6 @@
 import pandas as pd
 import httpx
-from app.schemas.pipeline import ParsedPipeline
+from app.models.pipeline import ParsedPipeline
 from app.ml.model_loader import load_model
 from app.config import settings
 
@@ -39,6 +39,7 @@ class AnalysisService:
         analysis_result = {
             "filename": pipeline.filename,
             "risk_score": risk_score,
+            "grade": self._map_risk_to_grade(risk_score),
             "findings": [f.dict() for f in pipeline.findings],
             "features": features.dict()
         }
@@ -47,6 +48,22 @@ class AnalysisService:
         await self._send_to_report_service(analysis_result)
 
         return analysis_result
+
+    def _map_risk_to_grade(self, risk_score: str) -> str:
+        """
+        Maps the risk score to a grade (A-E).
+        LOW -> A
+        MEDIUM -> C
+        HIGH -> D
+        CRITICAL -> E
+        """
+        mapping = {
+            "LOW": "A",
+            "MEDIUM": "C",
+            "HIGH": "D",
+            "CRITICAL": "E"
+        }
+        return mapping.get(risk_score, "UNKNOWN")
 
     async def _send_to_report_service(self, result: dict):
         if not settings.REPORT_API_URL:
