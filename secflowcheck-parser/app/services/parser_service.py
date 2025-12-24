@@ -79,9 +79,9 @@ class ParserService:
     def _traverse(self, obj, path, findings):
         if isinstance(obj, dict):
             for k, v in obj.items():
-                current_path = f"{path}.{k}" if path else k
-                # Check for suspicious keys (env vars etc)
-                if any(s in k.lower() for s in self.SECRET_VALUE_KEYWORDS):
+                current_path = f"{path}.{k}" if path else str(k)
+                # Check for suspicious keys (env vars etc) - only if key is a string
+                if isinstance(k, str) and any(s in k.lower() for s in self.SECRET_VALUE_KEYWORDS):
                     # If the value looks like a hardcoded string
                     if isinstance(v, str) and not v.startswith('$') and not '{{' in v:
                          findings.append(Finding(

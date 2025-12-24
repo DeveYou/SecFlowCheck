@@ -43,6 +43,9 @@ async def list_reports(
     async for doc in cursor:
         doc["id"] = str(doc["_id"])
         doc.pop("_id", None)
+        # Convert datetime to ISO string for JSON serialization
+        if "created_at" in doc and doc["created_at"]:
+            doc["created_at"] = doc["created_at"].isoformat()
         results.append(doc)
     return results
 

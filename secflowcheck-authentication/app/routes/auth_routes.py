@@ -209,6 +209,6 @@ async def auth_callback(
         target_url = f"http://localhost:8765/callback?token={access_token}"
     else:
         # Redirect to the Frontend Dashboard
-        target_url = f"{settings.FRONTEND_URL}/auth/callback?token={access_token}"
+        target_url = f"{settings.FRONTEND_URL}/auth/callback?token={access_token}&provider={provider}"
 
     return RedirectResponse(url=target_url)

@@ -35,13 +35,27 @@ class AnalysisService:
             else:
                 risk_score = "LOW"
 
-        # Construct Result
+        # Construct Result - matching Report model field names
+        # Keep 'features' at top level for frontend display
+        # Convert findings to match Report Finding schema (rule_id, severity, description, location)
+        converted_findings = []
+        for f in pipeline.findings:
+            finding_dict = f.dict()
+            converted_findings.append({
+                "rule_id": finding_dict.get("type", "unknown"),  # type -> rule_id
+                "severity": finding_dict.get("severity", "MEDIUM"),
+                "description": finding_dict.get("message", "No description"),  # message -> description
+                "location": finding_dict.get("location")
+            })
+        
         analysis_result = {
-            "filename": pipeline.filename,
-            "risk_score": risk_score,
+            "pipeline_name": pipeline.filename,  # matches Report.pipeline_name
+            "score": risk_score,                 # matches Report.score
             "grade": self._map_risk_to_grade(risk_score),
-            "findings": [f.dict() for f in pipeline.findings],
-            "features": features.dict()
+            "findings": converted_findings,
+            "total_findings": len(pipeline.findings),
+            "features": features.dict(),         # for frontend display
+            "metadata": {"features": features.dict()}  # for report storage
         }
 
         # Send to Report Service
@@ -71,8 +85,16 @@ class AnalysisService:
             return
 
         try:
-            async with httpx.AsyncClient() as client:
-                # Assuming /reports endpoint
-                await client.post(f"{settings.REPORT_API_URL}/reports", json=result)
+            headers = {"x-api-key": settings.REPORT_JWT}
+            # Ensure URL ends with trailing slash to avoid 307 redirect
+            url = settings.REPORT_API_URL.rstrip('/') + '/'
+            async with httpx.AsyncClient(follow_redirects=True) as client:
+                # Send to report service
+                response = await client.post(
+                    url, 
+                    json=result,
+                    headers=headers
+                )
+                print(f"Report sent: status={response.status_code}")
         except Exception as e:
             print(f"Failed to send report to {settings.REPORT_API_URL}: {e}")

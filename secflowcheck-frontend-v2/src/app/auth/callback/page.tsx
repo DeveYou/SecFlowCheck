@@ -22,6 +22,11 @@ export default function OAuthCallback() {
 
         if (token) {
             localStorage.setItem('token', token)
+            // Store OAuth provider for Analyzer repo selection
+            const provider = searchParams.get('provider')
+            if (provider) {
+                localStorage.setItem('oauth_provider', provider)
+            }
             setStatus('success')
             toast.success('Connexion réussie!')
             router.push('/dashboard')
