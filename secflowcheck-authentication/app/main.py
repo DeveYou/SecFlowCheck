@@ -5,7 +5,7 @@ import py_eureka_client.eureka_client as eureka_client
 
 from app.config import settings
 from app.database import engine, Base
-from app.routes import auth_routes
+from app.routes import auth_routes, repo_routes
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -49,6 +49,7 @@ app.add_middleware(SessionMiddleware, secret_key=settings.SESSION_SECRET)
 init_extensions()
 
 app.include_router(auth_routes.router)
+app.include_router(repo_routes.router)
 
 print("Loaded settings:", settings.dict())
 

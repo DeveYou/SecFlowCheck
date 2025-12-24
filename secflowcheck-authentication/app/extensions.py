@@ -37,5 +37,5 @@ def init_extensions():
             authorize_url='https://gitlab.com/oauth/authorize',
             access_token_url='https://gitlab.com/oauth/token',
             api_base_url='https://gitlab.com/api/v4/',
-            client_kwargs={'scope': 'read_user'}
+            client_kwargs={'scope': 'read_user read_api'}
         )

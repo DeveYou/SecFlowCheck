@@ -5,23 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3a518cec-2dca-415b-a7f5-adebc298d1ce" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.dev.yml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/secflowcheck-authentication/app/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/secflowcheck-authentication/app/config.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/secflowcheck-authentication/app/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/secflowcheck-authentication/app/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secflowcheck-authentication/app/models/user.py" beforeDir="false" afterPath="$PROJECT_DIR$/secflowcheck-authentication/app/models/user.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/secflowcheck-authentication/app/routes/auth_routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/secflowcheck-authentication/app/routes/auth_routes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/secflowcheck-authentication/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/secflowcheck-authentication/requirements.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/secflowcheck-frontend-v2/Dockerfile" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/secflowcheck-frontend-v2/next.config.mjs" beforeDir="false" afterPath="$PROJECT_DIR$/secflowcheck-frontend-v2/next.config.mjs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/secflowcheck-frontend-v2/src/app/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/secflowcheck-frontend-v2/src/app/layout.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/secflowcheck-frontend-v2/src/utils/aos.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/secflowcheck-frontend-v2/src/utils/aos.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/secflowcheck-gateway/src/main/java/com/secflowcheck/gateway/config/CorsConfiguration.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/secflowcheck-gateway/src/main/resources/application.properties" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/secflowcheck-authentication/app/services/auth_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/secflowcheck-authentication/app/services/auth_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secflowcheck-frontend-v2/src/app/components/Dashboard/SecFlowCheckDashboard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/secflowcheck-frontend-v2/src/app/components/Dashboard/SecFlowCheckDashboard.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/secflowcheck-gateway/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/secflowcheck-gateway/src/main/resources/application.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/secflowcheck-parser/app/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/secflowcheck-parser/app/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/secflowcheck-report/app/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/secflowcheck-report/app/config.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -40,12 +31,12 @@
     &quot;assignee&quot;: &quot;DeveYou&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/DeveYou/SecFlowCheck.git",
-    "accountId": "4cdd76e3-d628-4489-80c6-34d218a1de35"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/DeveYou/SecFlowCheck.git&quot;,
+    &quot;accountId&quot;: &quot;4cdd76e3-d628-4489-80c6-34d218a1de35&quot;
   }
-}]]></component>
+}</component>
   <component name="PhpWorkspaceProjectConfiguration" interpreter_name="E:\xampp\php\php.exe" />
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 4
@@ -78,9 +69,73 @@
     "project.structure.side.proportion": "0.0",
     "show.migrate.to.gradle.popup": "false",
     "to.speed.mode.migration.done": "true",
+    "ts.external.directory.path": "C:\\Users\\PC\\AppData\\Roaming\\JetBrains\\IntelliJIdea2025.2\\plugins\\javascript-plugin\\jsLanguageServicesImpl\\external",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
+  <component name="RunManager">
+    <configuration default="true" type="JetRunConfigurationType">
+      <module name="SecFlowCheck" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <module name="SecFlowCheck" />
+      <option name="filePath" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="PythonConfigurationType" factoryName="Python">
+      <module name="SecFlowCheck" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="Python.FlaskServer">
+      <module name="SecFlowCheck" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="launchJavascriptDebuger" value="false" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="Tox" factoryName="Tox">
+      <module name="SecFlowCheck" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <method v="2" />
+    </configuration>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -99,6 +154,7 @@
       <updated>1765134040092</updated>
       <workItem from="1765134042199" duration="6041000" />
       <workItem from="1766163588970" duration="1115000" />
+      <workItem from="1766531699956" duration="1852000" />
     </task>
     <servers />
   </component>

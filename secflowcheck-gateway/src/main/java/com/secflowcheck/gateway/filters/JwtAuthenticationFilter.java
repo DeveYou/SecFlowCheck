@@ -33,6 +33,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         // Eureka & metadata endpoints used by clients to register/fetch
         EXCLUDED_PATHS.add("/eureka/**");
         EXCLUDED_PATHS.add("/eureka/apps/**");
+        // Let Auth Service handle repo authentication (it has its own validation)
+        EXCLUDED_PATHS.add("/repos/**");
     }
 
     private final String jwtSecret;
@@ -68,8 +70,12 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
+        logger.info("DEBUG GATEWAY: Checking path '{}'", path);
         if (isExcluded(path)) {
+            logger.info("DEBUG GATEWAY: Path '{}' is EXCLUDED from auth", path);
             return chain.filter(exchange);
+        } else {
+            logger.info("DEBUG GATEWAY: Path '{}' requires AUTH", path);
         }
 
         String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
@@ -121,7 +127,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        // Run AFTER CORS filter (CORS is typically -1 or Ordered.HIGHEST_PRECEDENCE)
-        return Ordered.LOWEST_PRECEDENCE;
+        // Run EARLY to see original paths before StripPrefix modifies them
+        return Ordered.HIGHEST_PRECEDENCE;
     }
 }

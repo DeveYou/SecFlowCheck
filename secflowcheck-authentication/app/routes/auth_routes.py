@@ -148,8 +148,11 @@ async def auth_callback(provider: str, request: Request, db: AsyncSession = Depe
     if not email:
         raise HTTPException(status_code=400, detail="Email not provided by OAuth provider")
 
-    # Get or create user
-    user = await get_or_create_oauth_user(db, email, name, provider, provider_id)
+    # Extract OAuth access token for API calls
+    oauth_access_token = token.get('access_token')
+
+    # Get or create user (store OAuth token for repo API access)
+    user = await get_or_create_oauth_user(db, email, name, provider, provider_id, oauth_access_token)
 
     # Generate JWT
     access_token = create_access_token(data={"sub": user.email, "roles": user.roles})

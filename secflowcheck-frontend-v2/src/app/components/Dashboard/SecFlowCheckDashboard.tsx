@@ -1,6 +1,7 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
+import NewProjectModal from './NewProjectModal'
 import {
   LayoutDashboard,
   AlertTriangle,
@@ -118,32 +119,42 @@ const StatusBadge = ({ status }: { status: string }) => {
 }
 
 export default function SecFlowCheckDashboard() {
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const handleProjectSubmit = (yamlContent: string, projectName: string) => {
+    console.log('Project submitted:', projectName, yamlContent.substring(0, 100))
+    // TODO: Send to parser service for analysis
+  }
+
   return (
     <>
       {/* Row 1: KPI Metrics */}
       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>
-        <KPICard 
-          title='Dépôts surveillés' 
-          value={kpiData.totalRepos} 
+        <KPICard
+          title='Dépôts surveillés'
+          value={kpiData.totalRepos}
           icon={LayoutDashboard}
           colorClass='text-blue-500'
         />
-        <KPICard 
-          title='Score de sécurité global' 
-          value={`${kpiData.securityScore}/100`} 
+        <KPICard
+          title='Score de sécurité global'
+          value={`${kpiData.securityScore}/100`}
           subtext='Top 10% des organisations sécurisées'
           icon={CheckCircle}
           colorClass='text-emerald-500'
         />
-        <KPICard 
-          title='Problèmes critiques' 
-          value={kpiData.criticalIssues} 
+        <KPICard
+          title='Problèmes critiques'
+          value={kpiData.criticalIssues}
           subtext='Nécessite une attention immédiate'
           icon={AlertTriangle}
           colorClass='text-red-500'
         />
-        
-        <button className='bg-blue-600 hover:bg-blue-700 text-white rounded-xl p-6 flex flex-col items-center justify-center gap-3 transition-colors group shadow-lg shadow-blue-900/20'>
+
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className='bg-blue-600 hover:bg-blue-700 text-white rounded-xl p-6 flex flex-col items-center justify-center gap-3 transition-colors group shadow-lg shadow-blue-900/20'
+        >
           <div className='w-12 h-12 bg-white/10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform'>
             <Plus size={24} />
           </div>
@@ -153,7 +164,7 @@ export default function SecFlowCheckDashboard() {
 
       {/* Row 2: Charts */}
       <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
-        
+
         {/* Chart 1: Trend */}
         <div className='lg:col-span-2 bg-slate-900/50 border border-slate-800 rounded-xl p-6'>
           <h3 className='text-lg font-semibold text-white mb-6'>Tendance des vulnérabilités (30 jours)</h3>
@@ -162,36 +173,36 @@ export default function SecFlowCheckDashboard() {
               <AreaChart data={trendData}>
                 <defs>
                   <linearGradient id='colorScore' x1='0' y1='0' x2='0' y2='1'>
-                    <stop offset='5%' stopColor='#3b82f6' stopOpacity={0.3}/>
-                    <stop offset='95%' stopColor='#3b82f6' stopOpacity={0}/>
+                    <stop offset='5%' stopColor='#3b82f6' stopOpacity={0.3} />
+                    <stop offset='95%' stopColor='#3b82f6' stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray='3 3' stroke='#1e293b' vertical={false} />
-                <XAxis 
-                  dataKey='date' 
-                  stroke='#64748b' 
-                  tick={{fill: '#64748b', fontSize: 12}} 
+                <XAxis
+                  dataKey='date'
+                  stroke='#64748b'
+                  tick={{ fill: '#64748b', fontSize: 12 }}
                   tickLine={false}
                   axisLine={false}
                 />
-                <YAxis 
-                  stroke='#64748b' 
-                  tick={{fill: '#64748b', fontSize: 12}} 
+                <YAxis
+                  stroke='#64748b'
+                  tick={{ fill: '#64748b', fontSize: 12 }}
                   tickLine={false}
                   axisLine={false}
                   domain={[0, 100]}
                 />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', color: '#f1f5f9' }}
                   itemStyle={{ color: '#3b82f6' }}
                 />
-                <Area 
-                  type='monotone' 
-                  dataKey='score' 
-                  stroke='#3b82f6' 
+                <Area
+                  type='monotone'
+                  dataKey='score'
+                  stroke='#3b82f6'
                   strokeWidth={3}
-                  fillOpacity={1} 
-                  fill='url(#colorScore)' 
+                  fillOpacity={1}
+                  fill='url(#colorScore)'
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -217,11 +228,11 @@ export default function SecFlowCheckDashboard() {
                     <Cell key={`cell-${index}`} fill={entry.color} stroke='rgba(0,0,0,0)' />
                   ))}
                 </Pie>
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', color: '#f1f5f9' }}
                 />
-                <Legend 
-                  verticalAlign='bottom' 
+                <Legend
+                  verticalAlign='bottom'
                   height={36}
                   iconType='circle'
                 />
@@ -264,9 +275,9 @@ export default function SecFlowCheckDashboard() {
                     <div className='flex items-center gap-2'>
                       {/* Simple icons for platforms */}
                       {scan.platform === 'GitHub' ? (
-                        <svg className='w-4 h-4' fill='currentColor' viewBox='0 0 24 24'><path d='M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z'/></svg>
+                        <svg className='w-4 h-4' fill='currentColor' viewBox='0 0 24 24'><path d='M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z' /></svg>
                       ) : (
-                        <svg className='w-4 h-4 text-orange-500' fill='currentColor' viewBox='0 0 24 24'><path d='M22.65 14.39L12 22.13 1.35 14.39a.84.84 0 0 1-.3-.94l1.22-3.78 2.44-7.51A.42.42 0 0 1 4.82 2a.43.43 0 0 1 .41.26l2.47 7.6h8.6l2.47-7.6a.43.43 0 0 1 .41-.26.42.42 0 0 1 .11.02l2.44 7.51 1.22 3.78a.84.84 0 0 1-.3.94zM24 14.87a.86.86 0 0 1-1.24.15L12 7.54 1.24 15.02a.86.86 0 0 1-1.24-.15.86.86 0 0 1 .15-1.24l11.2-7.78a.86.86 0 0 1 1.3 0l11.2 7.78a.86.86 0 0 1 .15 1.24z'/></svg>
+                        <svg className='w-4 h-4 text-orange-500' fill='currentColor' viewBox='0 0 24 24'><path d='M22.65 14.39L12 22.13 1.35 14.39a.84.84 0 0 1-.3-.94l1.22-3.78 2.44-7.51A.42.42 0 0 1 4.82 2a.43.43 0 0 1 .41.26l2.47 7.6h8.6l2.47-7.6a.43.43 0 0 1 .41-.26.42.42 0 0 1 .11.02l2.44 7.51 1.22 3.78a.84.84 0 0 1-.3.94zM24 14.87a.86.86 0 0 1-1.24.15L12 7.54 1.24 15.02a.86.86 0 0 1-1.24-.15.86.86 0 0 1 .15-1.24l11.2-7.78a.86.86 0 0 1 1.3 0l11.2 7.78a.86.86 0 0 1 .15 1.24z' /></svg>
                       )}
                       {scan.platform}
                     </div>
@@ -277,10 +288,9 @@ export default function SecFlowCheckDashboard() {
                   <td className='px-6 py-4'>
                     <div className='flex items-center gap-2'>
                       <div className='w-24 h-2 bg-slate-800 rounded-full overflow-hidden'>
-                        <div 
-                          className={`h-full rounded-full ${
-                            scan.score > 80 ? 'bg-emerald-500' : scan.score > 50 ? 'bg-yellow-500' : 'bg-red-500'
-                          }`} 
+                        <div
+                          className={`h-full rounded-full ${scan.score > 80 ? 'bg-emerald-500' : scan.score > 50 ? 'bg-yellow-500' : 'bg-red-500'
+                            }`}
                           style={{ width: `${scan.score}%` }}
                         />
                       </div>
@@ -298,6 +308,13 @@ export default function SecFlowCheckDashboard() {
           </table>
         </div>
       </div>
+
+      {/* New Project Modal */}
+      <NewProjectModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleProjectSubmit}
+      />
     </>
   )
 }
