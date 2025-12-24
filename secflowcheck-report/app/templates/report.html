@@ -16,7 +16,7 @@
   <h1>SecFlowCheck Report</h1>
   <p><strong>Pipeline:</strong> {{ report.pipeline_name or "unknown" }}</p>
   <p><strong>Type:</strong> {{ report.pipeline_type or "unknown" }}</p>
-  <p class="score">Score: {{ report.score or "N/A" }}</p>
+  <p class="score">Score: {{ report.score or "N/A" }} <span style="font-size: 1.5rem; color: #555;">(Grade: {{ report.grade or "-" }})</span></p>
   <p><strong>Created at:</strong> {{ report.created_at }}</p>
 
   <h2>Findings ({{ report.total_findings }})</h2>

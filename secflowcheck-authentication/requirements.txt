@@ -3,8 +3,8 @@ uvicorn
 pydantic>=2.0
 httpx
 pyjwt
-passlib[bcrypt]
-bcrypt==4.0.1
+passlib==1.7.4
+bcrypt==3.2.2
 python-dotenv
 py-eureka-client
 sqlalchemy
@@ -15,3 +15,5 @@ PyYAML==6.0.1
 pydantic[email]
 Authlib
 itsdangerous
+alembic
+psycopg2-binary

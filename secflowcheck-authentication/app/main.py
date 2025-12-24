@@ -20,7 +20,8 @@ async def lifespan(app: FastAPI):
         eureka_server=settings.EUREKA_SERVER,
         app_name=settings.APP_NAME,
         instance_port=settings.SERVICE_PORT,
-        instance_host=settings.INSTANCE_IP
+        instance_host=settings.INSTANCE_HOST,
+        instance_ip=settings.INSTANCE_IP
     )
     print("Registered with Eureka")
 

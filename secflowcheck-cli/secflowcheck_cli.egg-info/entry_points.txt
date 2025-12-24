@@ -1,0 +1,2 @@
+[console_scripts]
+secflowcheck = app.main:main

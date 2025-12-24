@@ -1,5 +1,6 @@
 from pydantic import BaseSettings
 import os
+import os
 
 class Settings(BaseSettings):
     APP_TITLE: str = "SecFlowCheck Report Service"
@@ -12,8 +13,9 @@ class Settings(BaseSettings):
 
     # Eureka (Service Discovery)
     EUREKA_SERVER: str = "http://discovery:8761/eureka"
-    SERVICE_PORT: int = 8002
-    INSTANCE_IP: str = "secflowcheck-report"
+    SERVICE_PORT: int = 8003
+    INSTANCE_IP: str = "report"
+    INSTANCE_HOST: str = "report"
 
     class Config:
         env_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")

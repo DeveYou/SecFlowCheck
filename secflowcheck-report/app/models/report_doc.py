@@ -17,6 +17,7 @@ class Report(Document):
     pipeline_name: Optional[str] = Field(None)
     pipeline_type: Optional[str] = None
     score: Optional[str] = None
+    grade: Optional[str] = None
     total_findings: int = 0
     findings: List[Finding] = []
     metadata: Optional[Any] = None

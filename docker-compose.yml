@@ -96,8 +96,7 @@ services:
         condition: service_healthy
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://discovery:8761/eureka/"
-      JWT_SECRET: ${JWT_SECRET}
-      SPRING_CONFIG_LOCATION: file:/config/application.yml
+      SECRET_KEY: ${SECRET_KEY}
     ports:
       - "${GATEWAY_PORT}:8080"
     networks:
@@ -157,7 +156,7 @@ services:
     environment:
       CELERY_BROKER: ${CELERY_BROKER}
       CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
-      REPORT_API_URL: "http://report:8002/reports"
+      REPORT_API_URL: "http://report:8003/reports"
       REPORT_JWT: ${REPORT_JWT}
       DEBUG: ${DEBUG}
       SECFLOWCHECK_MODEL_PATH: ${SECFLOWCHECK_MODEL_PATH:-./models/model.pkl}
@@ -176,7 +175,7 @@ services:
     environment:
       CELERY_BROKER: ${CELERY_BROKER}
       CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
-      REPORT_API_URL: "http://report:8002/reports"
+      REPORT_API_URL: "http://report:8003/reports"
       REPORT_JWT: ${REPORT_JWT}
       DEBUG: ${DEBUG}
       SECFLOWCHECK_MODEL_PATH: ${SECFLOWCHECK_MODEL_PATH:-./models/model.pkl}
@@ -203,7 +202,7 @@ services:
       API_KEY: ${API_KEY}
       INSTANCE_IP: report
     ports:
-      - "${REPORT_PORT}:8002"
+      - "${REPORT_PORT}:8000"
     networks:
       - secflowcheck-network
 

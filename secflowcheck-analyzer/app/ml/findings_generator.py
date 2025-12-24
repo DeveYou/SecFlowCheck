@@ -1,5 +1,5 @@
 from typing import List
-from app.models.finding_model import Finding
+from app.models.pipeline import Finding
 
 
 def generate_findings_from_features(features: dict) -> List[Finding]:

@@ -1,6 +1,7 @@
 package com.secflowcheck.gateway.filters;
 
 import io.jsonwebtoken.*;
+import io.jsonwebtoken.security.Keys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
@@ -13,6 +14,7 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import reactor.core.publisher.Mono;
 
+import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
@@ -40,21 +42,24 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private final String jwtSecret;
 
     public JwtAuthenticationFilter() {
-        // read secret from environment for simplicity
-        String secret = System.getenv("JWT_SECRET");
+        // Use SECRET_KEY to match Python Auth Service
+        String secret = System.getenv("SECRET_KEY");
         if (secret == null || secret.isBlank()) {
             logger.warn(
-                    "JWT_SECRET not set. Gateway will still run but token validation will fail unless JWT_SECRET is provided.");
+                    "SECRET_KEY not set. Gateway will still run but token validation will fail unless SECRET_KEY is provided.");
             secret = "";
         }
-        // ensure bytes safe for JJWT
         this.jwtSecret = secret;
     }
 
     private boolean isExcluded(String path) {
+        if (path == null) {
+            return false;
+        }
         for (String pattern : EXCLUDED_PATHS) {
-            if (pathMatcher.match(pattern, path))
+            if (pattern != null && pathMatcher.match(pattern, path)) {
                 return true;
+            }
         }
         return false;
     }
@@ -89,14 +94,17 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         try {
             // Validate token using JJWT
             if (jwtSecret.isBlank()) {
-                logger.warn("Empty JWT_SECRET; rejecting token");
+                logger.warn("Empty SECRET_KEY; rejecting token");
                 exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
                 return exchange.getResponse().setComplete();
             }
 
+            // Use Keys.hmacShaKeyFor() for proper HMAC key handling (JJWT 0.11+)
             byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
+            SecretKey key = Keys.hmacShaKeyFor(keyBytes);
+
             Jws<Claims> claims = Jwts.parserBuilder()
-                    .setSigningKey(keyBytes)
+                    .setSigningKey(key)
                     .build()
                     .parseClaimsJws(token);
 
@@ -113,6 +121,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         } catch (ExpiredJwtException ex) {
             logger.debug("Expired token: {}", ex.getMessage());
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+            return exchange.getResponse().setComplete();
+        } catch (io.jsonwebtoken.security.WeakKeyException ex) {
+            logger.error("SECRET_KEY is too weak. HS256 requires at least 32 bytes: {}", ex.getMessage());
+            exchange.getResponse().setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
             return exchange.getResponse().setComplete();
         } catch (JwtException ex) {
             logger.debug("Invalid token: {}", ex.getMessage());

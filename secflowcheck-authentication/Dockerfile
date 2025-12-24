@@ -12,10 +12,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY ./app ./app
 COPY .env .
 
+COPY alembic.ini .
+COPY alembic ./alembic
+
 COPY wait-for-service.sh /wait-for-service.sh
 RUN sed -i 's/\r$//' /wait-for-service.sh
 RUN chmod +x /wait-for-service.sh
 
-EXPOSE 8003
+EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8003"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
