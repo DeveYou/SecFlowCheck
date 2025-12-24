@@ -13,6 +13,8 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import reactor.core.publisher.Mono;
+import org.springframework.http.HttpMethod;
+
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -65,6 +67,11 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange,
             org.springframework.cloud.gateway.filter.GatewayFilterChain chain) {
+
+        if (exchange.getRequest().getMethod() == HttpMethod.OPTIONS) {
+            return chain.filter(exchange);
+        }
+        
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getURI().getPath();
 

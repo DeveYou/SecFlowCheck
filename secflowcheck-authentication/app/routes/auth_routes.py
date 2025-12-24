@@ -110,6 +110,30 @@ async def login_oauth(provider: str, request: Request, cli: bool = False):
     return await client.authorize_redirect(request, redirect_uri, state=state_str)
 
 
+async def fetch_oauth_user(client, provider: str, token: dict) -> dict:
+    if provider == "github":
+        user = (await client.get("user", token=token)).json()
+        emails = (await client.get("user/emails", token=token)).json()
+        user["email"] = next(
+            (e["email"] for e in emails if e.get("primary") and e.get("verified")),
+            None,
+        )
+        user["provider_id"] = str(user.get("id"))
+        user["name"] = user.get("name") or user.get("login")
+        return user
+
+    if provider == "gitlab":
+        user = (await client.get("user", token=token)).json()
+        user["email"] = user.get("email")
+        user["provider_id"] = str(user.get("id"))
+        user["name"] = user.get("name") or user.get("username")
+        return user
+
+    user = await client.userinfo(token=token)
+    user["provider_id"] = user.get("sub")
+    user["name"] = user.get("name")
+    return user
+
 @router.get("/callback/{provider}", name="auth_callback")
 async def auth_callback(
     provider: str, 
@@ -126,7 +150,7 @@ async def auth_callback(
     try:
         # Exchange code for token
         token = await client.authorize_access_token(request)
-        user_info = await client.userinfo(token=token)
+        user_info = await fetch_oauth_user(client, provider, token)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"OAuth Handshake Failed: {str(e)}")
 
