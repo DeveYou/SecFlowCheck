@@ -5,7 +5,7 @@ from app.services.analysis_service import AnalysisService
 from app.models.pipeline import ParsedPipeline
 from app.tasks import forward_report
 
-router = APIRouter(prefix="/analyzer", tags=["Analyzer"])
+router = APIRouter(prefix="", tags=["Analyzer"])
 analysis_service = AnalysisService()
 
 @router.post("/analyze")

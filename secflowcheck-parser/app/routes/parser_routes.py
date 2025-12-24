@@ -2,7 +2,7 @@ from fastapi import APIRouter, UploadFile, File
 from fastapi.responses import JSONResponse
 from app.services.parser_service import ParserService
 
-router = APIRouter(prefix="/parser", tags=["Parser"])
+router = APIRouter(prefix="", tags=["Parser"])
 
 parser_service = ParserService()
 
