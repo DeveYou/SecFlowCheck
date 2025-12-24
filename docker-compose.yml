@@ -116,7 +116,8 @@ services:
     entrypoint: [ "/wait-for-service.sh", "postgres", "5432" ]
     command: [ "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000" ]
     environment:
-      JWT_SECRET: ${JWT_SECRET}
+      JWT_SECRET: ${SECRET_KEY}
+      GATEWAY_URL: "http://localhost:8080"
       DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
       EUREKA_SERVER: "http://discovery:8761/eureka"
       ALGORITHM: ${ALGORITHM}
@@ -138,7 +139,7 @@ services:
       discovery:
         condition: service_healthy
     environment:
-      JWT_SECRET: ${JWT_SECRET}
+      JWT_SECRET: ${SECRET_KEY}
       EUREKA_SERVER: "http://discovery:8761/eureka"
       INSTANCE_IP: parser
     ports:
@@ -159,8 +160,11 @@ services:
       REPORT_API_URL: "http://report:8003/reports"
       REPORT_JWT: ${REPORT_JWT}
       DEBUG: ${DEBUG}
-      SECFLOWCHECK_MODEL_PATH: ${SECFLOWCHECK_MODEL_PATH:-./models/model.pkl}
+      JWT_SECRET: ${SECRET_KEY}
       INSTANCE_IP: analyzer
+      SECFLOWCHECK_MODEL_PATH: /app/models/secflowcheck_model.joblib
+    volumes:
+      - ./secflowcheck-model/model/secflowcheck_model.joblib:/app/models/secflowcheck_model.joblib
     ports:
       - "${ANALYZER_PORT}:8000"
     networks:
@@ -178,7 +182,9 @@ services:
       REPORT_API_URL: "http://report:8003/reports"
       REPORT_JWT: ${REPORT_JWT}
       DEBUG: ${DEBUG}
-      SECFLOWCHECK_MODEL_PATH: ${SECFLOWCHECK_MODEL_PATH:-./models/model.pkl}
+      SECFLOWCHECK_MODEL_PATH: /app/models/secflowcheck_model.joblib
+    volumes:
+      - ./secflowcheck-model/model/secflowcheck_model.joblib:/app/models/secflowcheck_model.joblib
     networks:
       - secflowcheck-network
 
@@ -197,7 +203,7 @@ services:
       PYTHONUNBUFFERED: 1
       MONGO_URI: "mongodb://mongo:27017"
       MONGO_DB: ${MONGO_DB:-secflowcheck_report_db}
-      JWT_SECRET: ${JWT_SECRET}
+      JWT_SECRET: ${SECRET_KEY}
       DEBUG: ${DEBUG}
       API_KEY: ${API_KEY}
       INSTANCE_IP: report
