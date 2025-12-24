@@ -142,7 +142,7 @@ services:
       EUREKA_SERVER: "http://discovery:8761/eureka"
       INSTANCE_IP: parser
     ports:
-      - "${PARSER_PORT}:8001"
+      - "${PARSER_PORT}:8000"
     networks:
       - secflowcheck-network
 
@@ -162,7 +162,7 @@ services:
       SECFLOWCHECK_MODEL_PATH: ${SECFLOWCHECK_MODEL_PATH:-./models/model.pkl}
       INSTANCE_IP: analyzer
     ports:
-      - "${ANALYZER_PORT}:8003"
+      - "${ANALYZER_PORT}:8000"
     networks:
       - secflowcheck-network
 
