@@ -140,7 +140,7 @@ export default function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }: { isM
           <div className="flex items-center gap-3 px-2">
             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500" />
             <div>
-              <p className="text-sm font-medium text-white">{userData?.full_name}</p>
+              <p className="text-sm font-medium text-white">youssef</p>
               <p className="text-xs text-slate-500">{userData?.email}</p>
             </div>
           </div>
