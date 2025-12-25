@@ -20,5 +20,7 @@ services:
     environment:
       # Development specific env vars
       - NODE_ENV=development
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
     ports:
       - "3000:3000"
