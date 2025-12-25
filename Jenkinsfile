@@ -36,15 +36,11 @@ pipeline {
                 }
 
                 stage('Python Services') {
-                    agent {
-                        docker { 
-                            image 'python:3.9' 
-                            // Reuse the workspace so we can access checked out files
-                            reuseNode true 
-                        }
-                    }
                     steps {
                         script {
+                            // Install Python/Pip directly in the container (works because we run as root)
+                            sh 'apt-get update && apt-get install -y python3 python3-pip python3-venv'
+                            
                             def pythonServices = [
                                 'secflowcheck-authentication',
                                 'secflowcheck-model',
@@ -55,11 +51,10 @@ pipeline {
                             pythonServices.each { service ->
                                 dir(service) {
                                     echo "Building ${service}..."
-                                    // Ideally use a virtual environment
-                                    // For simplicity in this initial script, assuming capabilities to install/check exist
-                                    sh 'pip install --upgrade pip'
-                                    sh 'pip install -r requirements.txt'
-                                    // Add test command here if available, e.g., 'pytest'
+                                    // python3 -m pip is safer than just pip
+                                    // using --break-system-packages (if needed on newer debian) or standard install
+                                    sh 'python3 -m pip install --upgrade pip --break-system-packages || python3 -m pip install --upgrade pip'
+                                    sh 'python3 -m pip install -r requirements.txt --break-system-packages || python3 -m pip install -r requirements.txt'
                                 }
                             }
                         }
