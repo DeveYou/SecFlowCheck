@@ -171,3 +171,4 @@ Les contributions sont les bienvenues !
 3.  Commitez vos changements (`git commit -m 'Add some AmazingFeature'`).
 4.  Poussez vers la branche (`git push origin feature/AmazingFeature`).
 5.  Ouvrez une Pull Request.
+6.  Test pipeline
