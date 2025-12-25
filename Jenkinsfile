@@ -57,8 +57,8 @@ pipeline {
                                     sh 'python3 -m venv venv'
                                     
                                     // Use the pip inside the virtual environment
-                                    sh 'venv/bin/pip install --upgrade pip'
-                                    sh 'venv/bin/pip install -r requirements.txt'
+                                    sh 'venv/bin/pip install --default-timeout=1000 --upgrade pip'
+                                    sh 'venv/bin/pip install --default-timeout=1000 --retries=20 -r requirements.txt'
                                 }
                             }
                         }
