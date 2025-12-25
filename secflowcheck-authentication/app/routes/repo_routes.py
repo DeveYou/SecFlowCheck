@@ -77,8 +77,15 @@ async def list_repositories(user: User = Depends(get_current_user_with_token)):
                         "Authorization": f"Bearer {user.oauth_token}",
                         "Accept": "application/vnd.github.v3+json"
                     },
-                    params={"per_page": 100, "sort": "updated"}
+                    params={
+                        "per_page": 100, 
+                        "sort": "updated",
+                        "type": "public" 
+                    }
                 )
+                
+                # Debug Scopes and Response
+                logger.warning(f"DEBUG GITHUB: Scopes: {response.headers.get('X-OAuth-Scopes')}")
             else:  # gitlab
                 response = await client.get(
                     "https://gitlab.com/api/v4/projects",
@@ -87,10 +94,11 @@ async def list_repositories(user: User = Depends(get_current_user_with_token)):
                 )
             
             if response.status_code != 200:
-                print(f"Repo fetch error: {response.text}") # Debug log
+                logger.error(f"Repo fetch error: {response.text}") 
                 raise HTTPException(status_code=response.status_code, detail=f"Failed to fetch repositories: {response.text}")
             
             repos = response.json()
+            logger.warning(f"DEBUG GITHUB: Fetched {len(repos)} repositories raw.")
             
             # Normalize response format
             if user.provider == 'github':

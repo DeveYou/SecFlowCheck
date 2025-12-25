@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    triggers {
+        pollSCM('* * * * *')
+    }
+
     environment {
         // Define common environment variables here if needed
         DOCKER_REGISTRY_CREDENTIALS_ID = 'docker-hub-credentials' // Example ID

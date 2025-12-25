@@ -102,8 +102,6 @@ services:
     networks:
       - secflowcheck-network
     volumes:
-      # AJOUT : Montage du fichier local dans le conteneur
-      # Assurez-vous que le chemin à gauche (./secflowcheck-gateway/...) pointe bien vers votre fichier
       - ./secflowcheck-gateway/src/main/resources/application.yml:/config/application.yml
 
   auth:
@@ -179,8 +177,8 @@ services:
     environment:
       CELERY_BROKER: ${CELERY_BROKER}
       CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
-      REPORT_API_URL: "http://report:8003/reports"
-      REPORT_JWT: ${REPORT_JWT}
+      REPORT_API_URL: "http://report:8003/"
+      REPORT_API_KEY: ${REPORT_API_KEY}
       DEBUG: ${DEBUG}
       SECFLOWCHECK_MODEL_PATH: /app/models/secflowcheck_model.joblib
     volumes:
@@ -197,7 +195,7 @@ services:
         condition: service_healthy
       analyzer:
         condition: service_started
-    entrypoint: [ "/wait-for-service.sh", "mongo", "27017" ] 
+    entrypoint: [ "/wait-for-service.sh", "mongo", "27017" ]
     command: [ "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8003" ]
     environment:
       PYTHONUNBUFFERED: 1
@@ -211,25 +209,6 @@ services:
       - "${REPORT_PORT}:8000"
     networks:
       - secflowcheck-network
-
-  frontend:
-    build:
-      context: ./secflowcheck-frontend-v2
-      dockerfile: Dockerfile
-      target: runner # Build for production in this context, OR override for dev
-    # For Development (Hot Reload), override command and volumes:
-    # command: npm run dev
-    # volumes:
-    #   - ./secflowcheck-frontend-v2:/app
-    #   - /app/node_modules
-    environment:
-      - API_URL=http://localhost:8080 # Client-side access to Gateway
-    ports:
-      - "3000:3000"
-    networks:
-      - secflowcheck-network
-    depends_on:
-      - gateway
 
 volumes:
   mongo-data:

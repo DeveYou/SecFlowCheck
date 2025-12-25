@@ -58,9 +58,6 @@ class AnalysisService:
             "metadata": {"features": features.dict()}  # for report storage
         }
 
-        # Send to Report Service
-        await self._send_to_report_service(analysis_result)
-
         return analysis_result
 
     def _map_risk_to_grade(self, risk_score: str) -> str:
@@ -85,7 +82,7 @@ class AnalysisService:
             return
 
         try:
-            headers = {"x-api-key": settings.REPORT_JWT}
+            headers = {"x-api-key": settings.REPORT_API_KEY}
             # Ensure URL ends with trailing slash to avoid 307 redirect
             url = settings.REPORT_API_URL.rstrip('/') + '/'
             async with httpx.AsyncClient(follow_redirects=True) as client:

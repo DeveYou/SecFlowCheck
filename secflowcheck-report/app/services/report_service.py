@@ -29,8 +29,11 @@ async def list_reports(
     score: str = None,
     pipeline_type: str = None,
     repo: str = None,
+    user_id: str = None,
 ):
     query = {}
+    if user_id:
+        query["user_id"] = user_id
     if score:
         query["score"] = score
     if pipeline_type:

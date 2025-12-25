@@ -21,6 +21,7 @@ class Report(Document):
     total_findings: int = 0
     findings: List[Finding] = []
     metadata: Optional[Any] = None
+    user_id: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Settings:

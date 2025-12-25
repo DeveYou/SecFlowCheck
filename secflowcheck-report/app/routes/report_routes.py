@@ -14,6 +14,7 @@ NOT_FOUND = "Report not found"
 
 @router.post("/", response_class=JSONResponse)
 async def create_report(request: Request, report: Report = Body(...)):
+    print(f"DEBUG REPORT_SERVICE: Received report with user_id: {report.user_id}", flush=True)
     db = request.app.state.db
     try:
         rid = await save_report(db, report)
@@ -31,7 +32,8 @@ async def get_reports(
     repo: str = None
 ):
     db = request.app.state.db
-    reports = await list_reports(db, limit, skip, score, pipeline_type, repo)
+    user_id = request.headers.get("X-Auth-User")
+    reports = await list_reports(db, limit, skip, score, pipeline_type, repo, user_id=user_id)
     return JSONResponse(content={"count": len(reports), "results": reports})
 
 

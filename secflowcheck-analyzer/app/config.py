@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     CELERY_RESULT_BACKEND: str
 
     REPORT_API_URL: str
-    REPORT_JWT: str
+    REPORT_API_KEY: str
 
     # ML Model Path
     SECFLOWCHECK_MODEL_PATH: str
