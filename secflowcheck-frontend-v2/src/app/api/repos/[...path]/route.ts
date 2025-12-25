@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 
 const BACKEND_URL = 'http://localhost:8080'
 
+// Next.js 15: params is a Promise
 export async function GET(
     request: NextRequest,
-    { params }: { params: { path: string[] } }
+    { params }: { params: Promise<{ path: string[] }> }
 ) {
     try {
         const authHeader = request.headers.get('authorization')
@@ -13,7 +14,8 @@ export async function GET(
             return NextResponse.json({ detail: 'Authorization header required' }, { status: 401 })
         }
 
-        const pathSegments = params.path
+        const resolvedParams = await params
+        const pathSegments = resolvedParams.path
         const searchParams = request.nextUrl.searchParams
 
         // We expect at least owner/repo/action

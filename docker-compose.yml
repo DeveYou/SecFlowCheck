@@ -212,6 +212,25 @@ services:
     networks:
       - secflowcheck-network
 
+  frontend:
+    build:
+      context: ./secflowcheck-frontend-v2
+      dockerfile: Dockerfile
+      target: runner # Build for production in this context, OR override for dev
+    # For Development (Hot Reload), override command and volumes:
+    # command: npm run dev
+    # volumes:
+    #   - ./secflowcheck-frontend-v2:/app
+    #   - /app/node_modules
+    environment:
+      - API_URL=http://localhost:8080 # Client-side access to Gateway
+    ports:
+      - "3000:3000"
+    networks:
+      - secflowcheck-network
+    depends_on:
+      - gateway
+
 volumes:
   mongo-data:
   postgres-data:
