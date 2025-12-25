@@ -80,10 +80,10 @@ def create_refresh_token(data: Dict[str, Any]) -> str:
     )
     return encoded_jwt
 
-async def get_or_create_oauth_user(db: AsyncSession, email: str, full_name: str, provider: str, provider_id: str) -> User:
+async def get_or_create_oauth_user(db: AsyncSession, email: str, full_name: str, provider: str, provider_id: str, oauth_token: str = None) -> User:
     """
     Retrieves a user by email, or creates a new one if not exists.
-    Links the OAuth provider to the user.
+    Links the OAuth provider to the user and stores the OAuth access token.
     """
     # Check if user exists
     query = select(User).where(User.email == email)
@@ -91,13 +91,14 @@ async def get_or_create_oauth_user(db: AsyncSession, email: str, full_name: str,
     user = result.scalars().first()
 
     if user:
-        # Link account if not already linked (or update provider/provider_id)
-        if user.provider != provider:
-             user.provider = provider
-             user.provider_id = provider_id
-             db.add(user)
-             await db.commit()
-             await db.refresh(user)
+        # Update provider info and token
+        user.provider = provider
+        user.provider_id = provider_id
+        if oauth_token:
+            user.oauth_token = oauth_token
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
         return user
     
     # Create new user
@@ -107,6 +108,7 @@ async def get_or_create_oauth_user(db: AsyncSession, email: str, full_name: str,
         hashed_password=None, # OAuth users don't have password
         provider=provider,
         provider_id=provider_id,
+        oauth_token=oauth_token,
         roles=["user"]
     )
     

@@ -1,15 +1,160 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
-import { Upload, FileCode, X, Play, CheckCircle, AlertTriangle, Loader2, FileText, Download } from 'lucide-react'
+import React, { useState, useRef, useEffect } from 'react'
+import {
+  Upload, FileCode, X, Play, CheckCircle, AlertTriangle, Loader2,
+  FileText, Download, Github, GitlabIcon, FolderGit2, RefreshCcw,
+  ChevronRight, Shield, Activity
+} from 'lucide-react'
+import toast, { Toaster } from 'react-hot-toast'
+
+// --- Interfaces ---
+interface Repo {
+  id: string | number
+  name: string
+  full_name: string
+  provider: 'github' | 'gitlab'
+}
+
+interface Pipeline {
+  name: string
+  path: string
+  content?: string
+}
+
+interface AnalysisResult {
+  pipeline_name: string
+  score: string
+  grade: string
+  findings: any[]
+  total_findings: number
+  features: {
+    num_jobs: number
+    num_steps: number
+    has_secrets: boolean
+    privileged_access: boolean
+  }
+}
+
+type AnalysisMode = 'repos' | 'manual'
 
 export default function Analyzer() {
+  // Mode state
+  const [mode, setMode] = useState<AnalysisMode>('manual')
+  const [isOAuthConnected, setIsOAuthConnected] = useState(false)
+  const [oauthProvider, setOauthProvider] = useState<'github' | 'gitlab' | null>(null)
+
+  // Repos mode state
+  const [repos, setRepos] = useState<Repo[]>([])
+  const [selectedRepo, setSelectedRepo] = useState<Repo | null>(null)
+  const [pipelines, setPipelines] = useState<Pipeline[]>([])
+  const [loadingRepos, setLoadingRepos] = useState(false)
+  const [loadingPipelines, setLoadingPipelines] = useState(false)
+
+  // Manual mode state
   const [file, setFile] = useState<File | null>(null)
+  const [yamlContent, setYamlContent] = useState('')
+  const [fileName, setFileName] = useState('')
   const [isDragging, setIsDragging] = useState(false)
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [analysisResult, setAnalysisResult] = useState<any | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Analysis state
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
+
+  // Check OAuth connection on mount
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    const provider = localStorage.getItem('oauth_provider')
+    if (token && provider) {
+      setIsOAuthConnected(true)
+      setOauthProvider(provider as 'github' | 'gitlab')
+      setMode('repos')
+    }
+  }, [])
+
+  // Fetch repos when connected
+  const fetchRepos = async () => {
+    setLoadingRepos(true)
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch('http://localhost:8080/repos/', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setRepos(data.repos || data || [])
+      }
+    } catch (err) {
+      console.error('Failed to fetch repos:', err)
+      toast.error('Échec du chargement des dépôts')
+    } finally {
+      setLoadingRepos(false)
+    }
+  }
+
+  useEffect(() => {
+    if (isOAuthConnected && mode === 'repos' && repos.length === 0) {
+      fetchRepos()
+    }
+  }, [isOAuthConnected, mode])
+
+  // Fetch pipelines for selected repo
+  const fetchPipelines = async (repo: Repo) => {
+    setLoadingPipelines(true)
+    setPipelines([])
+    try {
+      const token = localStorage.getItem('token')
+      const foundPipelines: Pipeline[] = []
+
+      // For GitHub, check .github/workflows directory
+      if (repo.provider === 'github') {
+        try {
+          const res = await fetch(`http://localhost:8080/repos/${repo.full_name}/contents?path=.github/workflows`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+          if (res.ok) {
+            const data = await res.json()
+            const yamlFiles = (data || []).filter((f: any) =>
+              f.type === 'file' && (f.name.endsWith('.yml') || f.name.endsWith('.yaml'))
+            )
+            yamlFiles.forEach((f: any) => foundPipelines.push({ name: f.name, path: f.path }))
+          }
+        } catch (e) {
+          console.log('No .github/workflows found')
+        }
+      }
+
+      // Also check root directory for any YAML files
+      try {
+        const res = await fetch(`http://localhost:8080/repos/${repo.full_name}/contents`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        if (res.ok) {
+          const data = await res.json()
+          const yamlFiles = (data || []).filter((f: any) =>
+            f.type === 'file' && (f.name.endsWith('.yml') || f.name.endsWith('.yaml'))
+          )
+          yamlFiles.forEach((f: any) => {
+            // Avoid duplicates
+            if (!foundPipelines.some(p => p.path === f.path)) {
+              foundPipelines.push({ name: f.name, path: f.path })
+            }
+          })
+        }
+      } catch (e) {
+        console.log('Error fetching root contents')
+      }
+
+      setPipelines(foundPipelines)
+    } catch (err) {
+      console.error('Failed to fetch pipelines:', err)
+    } finally {
+      setLoadingPipelines(false)
+    }
+  }
+
+  // File handling for manual mode
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(true)
@@ -23,298 +168,441 @@ export default function Analyzer() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const droppedFile = e.dataTransfer.files[0]
-      if (droppedFile.name.endsWith('.yml') || droppedFile.name.endsWith('.yaml')) {
-        setFile(droppedFile)
-        setAnalysisResult(null)
-      } else {
-        alert('Veuillez télécharger un fichier YAML (.yml ou .yaml)')
-      }
+      handleFileUpload(e.dataTransfer.files[0])
     }
   }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const selectedFile = e.target.files[0]
-      const fileName = selectedFile.name.toLowerCase()
-      if (fileName.endsWith('.yml') || fileName.endsWith('.yaml')) {
-        setFile(selectedFile)
-        setAnalysisResult(null)
-      } else {
-        alert('Veuillez télécharger un fichier YAML (.yml ou .yaml)')
-      }
+      handleFileUpload(e.target.files[0])
     }
+  }
+
+  const handleFileUpload = async (uploadedFile: File) => {
+    const name = uploadedFile.name.toLowerCase()
+    if (!name.endsWith('.yml') && !name.endsWith('.yaml')) {
+      toast.error('Veuillez sélectionner un fichier YAML (.yml ou .yaml)')
+      return
+    }
+
+    setFile(uploadedFile)
+    setFileName(uploadedFile.name)
+    const content = await uploadedFile.text()
+    setYamlContent(content)
+    setAnalysisResult(null)
   }
 
   const removeFile = () => {
     setFile(null)
+    setYamlContent('')
+    setFileName('')
     setAnalysisResult(null)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  const saveReportToHistory = (result: any) => {
-    const newReport = {
-      id: Date.now(),
-      fileName: file?.name || 'pipeline.yml',
-      date: new Date().toISOString(),
-      score: result.score,
-      status: result.status,
-      issuesCount: result.issues.length,
-      result: result
-    }
-
-    const existingReports = JSON.parse(localStorage.getItem('secflow_reports') || '[]')
-    localStorage.setItem('secflow_reports', JSON.stringify([newReport, ...existingReports]))
-  }
-
-  const downloadReport = () => {
-    if (!analysisResult || !file) return
-
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html lang="fr">
-      <head>
-        <meta charset="UTF-8">
-        <title>Rapport de Sécurité - ${file.name}</title>
-        <style>
-          body { font-family: system-ui, sans-serif; line-height: 1.5; max-width: 800px; margin: 0 auto; padding: 2rem; color: #1e293b; }
-          h1 { color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 1rem; }
-          .score-card { background: #f8fafc; padding: 1.5rem; border-radius: 0.5rem; margin-bottom: 2rem; border: 1px solid #e2e8f0; }
-          .score { font-size: 2.5rem; font-weight: bold; color: ${analysisResult.score > 80 ? '#10b981' : analysisResult.score > 50 ? '#eab308' : '#ef4444'}; }
-          .issue { padding: 1rem; border: 1px solid #e2e8f0; margin-bottom: 1rem; border-radius: 0.5rem; }
-          .high { border-left: 4px solid #ef4444; }
-          .medium { border-left: 4px solid #f97316; }
-          .low { border-left: 4px solid #eab308; }
-          .badge { display: inline-block; padding: 0.25rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
-          .badge-high { background: #fef2f2; color: #ef4444; }
-          .badge-medium { background: #fff7ed; color: #f97316; }
-          .badge-low { background: #fefce8; color: #eab308; }
-        </style>
-      </head>
-      <body>
-        <h1>Rapport d'Analyse de Sécurité</h1>
-        <div class="score-card">
-          <p>Fichier: <strong>${file.name}</strong></p>
-          <p>Date: ${new Date().toLocaleDateString('fr-FR')}</p>
-          <p>Score de Sécurité</p>
-          <div class="score">${analysisResult.score}/100</div>
-        </div>
-        <h2>Vulnérabilités Détectées (${analysisResult.issues.length})</h2>
-        ${analysisResult.issues.map((issue: any) => `
-          <div class="issue ${issue.severity.toLowerCase()}">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-              <span class="badge badge-${issue.severity.toLowerCase()}">${issue.severity}</span>
-              <span style="color: #64748b; font-size: 0.875rem;">Ligne ${issue.line}</span>
-            </div>
-            <div style="font-weight: 500;">${issue.message}</div>
-          </div>
-        `).join('')}
-      </body>
-      </html>
-    `
-
-    const blob = new Blob([htmlContent], { type: 'text/html' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `rapport-securite-${file.name}-${Date.now()}.html`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  }
-
-  const startAnalysis = () => {
-    if (!file) return
-
+  // Analysis function
+  const startAnalysis = async (content: string, name: string) => {
     setIsAnalyzing(true)
-    
-    // Simulate analysis delay
-    setTimeout(() => {
-      setIsAnalyzing(false)
-      const result = {
-        score: 85,
-        status: 'Passed',
-        issues: [
-          { id: 1, severity: 'High', message: 'Utilisation de secrets en clair détectée', line: 12 },
-          { id: 2, severity: 'Medium', message: 'Version de l\'image de base obsolète', line: 4 },
-          { id: 3, severity: 'Low', message: 'Absence de limite de ressources', line: 22 },
-        ]
+    const toastId = toast.loading('Analyse en cours...')
+
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) throw new Error('Vous devez être connecté')
+
+      // Step 1: Parse
+      const parseRes = await fetch('http://localhost:8080/parser/parse', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ content, filename: name })
+      })
+
+      if (!parseRes.ok) {
+        if (parseRes.status === 401) throw new Error('Session expirée')
+        throw new Error('Échec du parsing')
       }
+      const parsedData = await parseRes.json()
+
+      // Step 2: Analyze
+      const analyzeRes = await fetch('http://localhost:8080/analyzer/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(parsedData)
+      })
+
+      if (!analyzeRes.ok) {
+        if (analyzeRes.status === 401) throw new Error('Session expirée')
+        throw new Error('Échec de l\'analyse')
+      }
+      const result = await analyzeRes.json()
+
       setAnalysisResult(result)
-      saveReportToHistory(result)
-    }, 2000)
+      toast.success('Analyse terminée!', { id: toastId })
+
+    } catch (err: any) {
+      console.error(err)
+      toast.error(err.message || 'Erreur', { id: toastId })
+    } finally {
+      setIsAnalyzing(false)
+    }
+  }
+
+  const analyzeManual = () => {
+    if (!yamlContent.trim()) {
+      toast.error('Veuillez fournir du contenu YAML')
+      return
+    }
+    startAnalysis(yamlContent, fileName || 'pipeline.yml')
+  }
+
+  const analyzePipeline = async (pipeline: Pipeline) => {
+    if (pipeline.content) {
+      startAnalysis(pipeline.content, pipeline.name)
+    } else {
+      // Fetch content first
+      try {
+        const token = localStorage.getItem('token')
+        // Use /file/ endpoint (not /files/) and don't encode the path since it contains slashes
+        const res = await fetch(`http://localhost:8080/repos/${selectedRepo?.full_name}/file/${pipeline.path}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        if (res.ok) {
+          const data = await res.json()
+          startAnalysis(data.content, pipeline.name)
+        } else {
+          toast.error('Impossible de récupérer le fichier')
+        }
+      } catch (err) {
+        toast.error('Erreur lors de la récupération du fichier')
+      }
+    }
+  }
+
+  const resetAnalysis = () => {
+    setAnalysisResult(null)
+    setSelectedRepo(null)
+    setPipelines([])
+    removeFile()
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <input 
-        type="file" 
+    <div className="max-w-5xl mx-auto">
+      <Toaster position="top-right" />
+      <input
+        type="file"
         ref={fileInputRef}
         onChange={handleFileSelect}
         accept=".yml,.yaml"
         className="hidden"
       />
+
+      {/* Header */}
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-white mb-2">Analyseur de Pipeline CI/CD</h2>
-        <p className="text-slate-400">Téléchargez votre fichier de configuration pipeline (YAML) pour détecter les vulnérabilités de sécurité et les mauvaises configurations.</p>
+        <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-3">
+          <Activity className="text-blue-500" />
+          Analyseur de Pipeline CI/CD
+        </h2>
+        <p className="text-slate-400">
+          {isOAuthConnected
+            ? `Connecté via ${oauthProvider === 'github' ? 'GitHub' : 'GitLab'} - Sélectionnez un dépôt ou importez manuellement`
+            : 'Importez votre fichier pipeline YAML pour détecter les vulnérabilités'
+          }
+        </p>
       </div>
 
-      {/* Upload Area */}
-      <div 
-        className={`border-2 border-dashed rounded-xl p-10 text-center transition-colors ${
-          isDragging 
-            ? 'border-blue-500 bg-blue-500/10' 
-            : 'border-slate-700 hover:border-slate-600 bg-slate-900/50'
-        }`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
-        {!file ? (
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center text-blue-500">
-              <Upload size={32} />
-            </div>
-            <div>
-              <p className="text-lg font-medium text-white mb-1">Glissez-déposez votre fichier pipeline ici</p>
-              <p className="text-slate-500 text-sm mb-4">Supporte .yml et .yaml</p>
-              <button 
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-              >
-                Parcourir les fichiers
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between bg-slate-800/50 p-4 rounded-lg border border-slate-700 max-w-lg mx-auto">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-500/20 text-blue-400 rounded-lg">
-                <FileCode size={24} />
-              </div>
-              <div className="text-left">
-                <p className="text-white font-medium truncate max-w-[200px]">{file.name}</p>
-                <p className="text-xs text-slate-500">{(file.size / 1024).toFixed(2)} KB</p>
-              </div>
-            </div>
-            <button 
-              onClick={removeFile}
-              className="p-2 text-slate-400 hover:text-red-400 transition-colors"
-              disabled={isAnalyzing}
-            >
-              <X size={20} />
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Action Button */}
-      {file && !analysisResult && (
-        <div className="mt-6 flex justify-center">
-          <button
-            onClick={startAnalysis}
-            disabled={isAnalyzing}
-            className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-white transition-all ${
-              isAnalyzing 
-                ? 'bg-slate-700 cursor-not-allowed' 
-                : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-900/20'
+      {/* Mode Tabs */}
+      <div className="flex gap-2 mb-6">
+        <button
+          onClick={() => { setMode('repos'); resetAnalysis() }}
+          className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${mode === 'repos'
+            ? 'bg-blue-600 text-white'
+            : 'bg-slate-800 text-slate-400 hover:text-white'
             }`}
-          >
-            {isAnalyzing ? (
-              <>
-                <Loader2 className="animate-spin" size={20} />
-                Analyse en cours...
-              </>
-            ) : (
-              <>
-                <Play size={20} />
-                Lancer l'analyse
-              </>
-            )}
-          </button>
-        </div>
-      )}
+        >
+          <FolderGit2 size={18} />
+          Mes Dépôts
+        </button>
+        <button
+          onClick={() => { setMode('manual'); resetAnalysis() }}
+          className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${mode === 'manual'
+            ? 'bg-blue-600 text-white'
+            : 'bg-slate-800 text-slate-400 hover:text-white'
+            }`}
+        >
+          <Upload size={18} />
+          Import Manuel
+        </button>
+      </div>
 
-      {/* Results Section */}
-      {analysisResult && (
-        <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="flex justify-end mb-4">
+      {/* Analysis Result */}
+      {analysisResult ? (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="flex justify-between items-center">
+            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+              <FileCode className="text-blue-500" />
+              Résultat: {analysisResult.pipeline_name}
+            </h3>
             <button
-              onClick={downloadReport}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors border border-slate-700"
+              onClick={resetAnalysis}
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg flex items-center gap-2"
             >
-              <Download size={18} />
-              Télécharger le rapport
+              <RefreshCcw size={18} />
+              Nouvelle analyse
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-xl flex items-center gap-4">
-              <div className="p-3 bg-emerald-500/10 text-emerald-500 rounded-full">
-                <CheckCircle size={24} />
-              </div>
-              <div>
-                <p className="text-slate-400 text-sm">Score de Sécurité</p>
-                <p className="text-2xl font-bold text-white">{analysisResult.score}/100</p>
-              </div>
+          {/* KPI Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-xl">
+              <p className="text-slate-400 text-sm mb-1">Score</p>
+              <p className={`text-2xl font-bold ${analysisResult.score === 'LOW' ? 'text-emerald-500' :
+                analysisResult.score === 'MEDIUM' ? 'text-yellow-500' : 'text-red-500'
+                }`}>{analysisResult.grade}</p>
+              <p className="text-slate-500 text-xs">{analysisResult.score}</p>
             </div>
-            <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-xl flex items-center gap-4">
-              <div className="p-3 bg-blue-500/10 text-blue-500 rounded-full">
-                <FileText size={24} />
-              </div>
-              <div>
-                <p className="text-slate-400 text-sm">Fichier Analysé</p>
-                <p className="text-white font-medium truncate max-w-[150px]">{file?.name}</p>
-              </div>
+            <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-xl">
+              <p className="text-slate-400 text-sm mb-1">Secrets</p>
+              <p className={`text-2xl font-bold ${analysisResult.features.has_secrets ? 'text-red-500' : 'text-emerald-500'}`}>
+                {analysisResult.features.has_secrets ? 'OUI' : 'NON'}
+              </p>
             </div>
-            <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-xl flex items-center gap-4">
-              <div className="p-3 bg-red-500/10 text-red-500 rounded-full">
-                <AlertTriangle size={24} />
-              </div>
-              <div>
-                <p className="text-slate-400 text-sm">Problèmes Détectés</p>
-                <p className="text-2xl font-bold text-white">{analysisResult.issues.length}</p>
-              </div>
+            <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-xl">
+              <p className="text-slate-400 text-sm mb-1">Accès Privilégiés</p>
+              <p className={`text-2xl font-bold ${analysisResult.features.privileged_access ? 'text-orange-500' : 'text-emerald-500'}`}>
+                {analysisResult.features.privileged_access ? 'OUI' : 'NON'}
+              </p>
+            </div>
+            <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-xl">
+              <p className="text-slate-400 text-sm mb-1">Problèmes</p>
+              <p className="text-2xl font-bold text-white">{analysisResult.total_findings}</p>
+              <p className="text-slate-500 text-xs">{analysisResult.features.num_jobs} jobs, {analysisResult.features.num_steps} steps</p>
             </div>
           </div>
 
+          {/* Findings */}
           <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden">
-            <div className="p-6 border-b border-slate-800">
-              <h3 className="text-lg font-semibold text-white">Détails des vulnérabilités</h3>
+            <div className="p-4 border-b border-slate-800">
+              <h4 className="text-lg font-semibold text-white">Vulnérabilités détectées</h4>
             </div>
-            <div className="divide-y divide-slate-800">
-              {analysisResult.issues.map((issue: any) => (
-                <div key={issue.id} className="p-6 hover:bg-slate-800/30 transition-colors flex items-start gap-4">
-                  <div className={`mt-1 p-1.5 rounded-full ${
-                    issue.severity === 'High' ? 'bg-red-500/10 text-red-500' :
-                    issue.severity === 'Medium' ? 'bg-orange-500/10 text-orange-500' :
-                    'bg-yellow-500/10 text-yellow-500'
-                  }`}>
-                    <AlertTriangle size={16} />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-1">
-                      <h4 className="text-white font-medium">{issue.message}</h4>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        issue.severity === 'High' ? 'bg-red-500/10 text-red-500 border border-red-500/20' :
-                        issue.severity === 'Medium' ? 'bg-orange-500/10 text-orange-500 border border-orange-500/20' :
-                        'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'
-                      }`}>
-                        {issue.severity}
-                      </span>
+            {analysisResult.findings.length > 0 ? (
+              <div className="divide-y divide-slate-800">
+                {analysisResult.findings.map((f, i) => (
+                  <div key={i} className="p-4 hover:bg-slate-800/30">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${f.severity === 'CRITICAL' ? 'bg-red-500/20 text-red-400' :
+                        f.severity === 'HIGH' ? 'bg-orange-500/20 text-orange-400' :
+                          f.severity === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400' :
+                            'bg-blue-500/20 text-blue-400'
+                        }`}>{f.severity}</span>
+                      <span className="text-slate-500 text-sm">{f.rule_id}</span>
                     </div>
-                    <p className="text-slate-400 text-sm">Ligne {issue.line} dans {file?.name}</p>
+                    <p className="text-white">{f.description}</p>
+                    {f.location && <p className="text-slate-400 text-sm mt-1">📍 {f.location}</p>}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 text-center">
+                <CheckCircle size={48} className="text-emerald-500 mx-auto mb-2" />
+                <p className="text-white font-medium">Aucun problème détecté</p>
+                <p className="text-slate-400 text-sm">Votre pipeline semble sécurisé</p>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : mode === 'repos' ? (
+        /* Repos Mode */
+        <div className="space-y-6">
+          {!isOAuthConnected ? (
+            /* Connect to OAuth */
+            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-8 text-center">
+              <FolderGit2 size={48} className="text-slate-500 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-white mb-2">Connectez votre compte</h3>
+              <p className="text-slate-400 mb-6">Connectez-vous via GitHub ou GitLab pour accéder à vos dépôts et pipelines</p>
+              <div className="flex justify-center gap-4">
+                <a
+                  href="http://localhost:8080/auth/login/oauth/github"
+                  className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-lg flex items-center gap-2 transition-colors border border-slate-700"
+                >
+                  <Github size={20} />
+                  GitHub
+                </a>
+                <a
+                  href="http://localhost:8080/auth/login/oauth/gitlab"
+                  className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg flex items-center gap-2 transition-colors"
+                >
+                  <FolderGit2 size={20} />
+                  GitLab
+                </a>
+              </div>
+            </div>
+          ) : !selectedRepo ? (
+            /* Repo List */
+            <div className="bg-slate-900/50 border border-slate-800 rounded-xl">
+              <div className="p-4 border-b border-slate-800 flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-white">Sélectionnez un dépôt</h3>
+                <button onClick={fetchRepos} disabled={loadingRepos} className="text-blue-500 hover:text-blue-400">
+                  <RefreshCcw size={18} className={loadingRepos ? 'animate-spin' : ''} />
+                </button>
+              </div>
+              {loadingRepos ? (
+                <div className="p-8 text-center">
+                  <Loader2 className="animate-spin text-blue-500 mx-auto" size={32} />
+                </div>
+              ) : repos.length > 0 ? (
+                <div className="divide-y divide-slate-800 max-h-[400px] overflow-y-auto">
+                  {repos.map(repo => (
+                    <button
+                      key={repo.id}
+                      onClick={() => { setSelectedRepo(repo); fetchPipelines(repo) }}
+                      className="w-full p-4 flex items-center justify-between hover:bg-slate-800/50 transition-colors text-left"
+                    >
+                      <div className="flex items-center gap-3">
+                        <FolderGit2 className="text-blue-500" size={20} />
+                        <span className="text-white font-medium">{repo.name}</span>
+                      </div>
+                      <ChevronRight className="text-slate-500" size={18} />
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 text-center text-slate-400">
+                  Aucun dépôt trouvé
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Pipeline List */
+            <div className="bg-slate-900/50 border border-slate-800 rounded-xl">
+              <div className="p-4 border-b border-slate-800 flex justify-between items-center">
+                <div>
+                  <button onClick={() => setSelectedRepo(null)} className="text-blue-500 text-sm hover:underline">
+                    ← Retour
+                  </button>
+                  <h3 className="text-lg font-semibold text-white mt-1">{selectedRepo.name}</h3>
+                </div>
+              </div>
+              {loadingPipelines ? (
+                <div className="p-8 text-center">
+                  <Loader2 className="animate-spin text-blue-500 mx-auto" size={32} />
+                </div>
+              ) : pipelines.length > 0 ? (
+                <div className="divide-y divide-slate-800">
+                  {pipelines.map((p, i) => (
+                    <button
+                      key={i}
+                      onClick={() => analyzePipeline(p)}
+                      disabled={isAnalyzing}
+                      className="w-full p-4 flex items-center justify-between hover:bg-slate-800/50 transition-colors text-left"
+                    >
+                      <div className="flex items-center gap-3">
+                        <FileCode className="text-emerald-500" size={20} />
+                        <span className="text-white">{p.name}</span>
+                      </div>
+                      <Play className="text-blue-500" size={18} />
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 text-center text-slate-400">
+                  Aucun pipeline trouvé dans ce dépôt
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Manual Mode */
+        <div className="space-y-6">
+          {/* Upload Area */}
+          <div
+            className={`border-2 border-dashed rounded-xl p-10 text-center transition-colors ${isDragging ? 'border-blue-500 bg-blue-500/10' : 'border-slate-700 hover:border-slate-600 bg-slate-900/50'
+              }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            {!file ? (
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center text-blue-500">
+                  <Upload size={32} />
+                </div>
+                <div>
+                  <p className="text-lg font-medium text-white mb-1">Glissez-déposez votre fichier pipeline ici</p>
+                  <p className="text-slate-500 text-sm mb-4">Supporte .yml et .yaml</p>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                  >
+                    Parcourir les fichiers
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between bg-slate-800/50 p-4 rounded-lg border border-slate-700 max-w-lg mx-auto">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-500/20 text-blue-400 rounded-lg">
+                    <FileCode size={24} />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-white font-medium truncate max-w-[200px]">{file.name}</p>
+                    <p className="text-xs text-slate-500">{(file.size / 1024).toFixed(2)} KB</p>
                   </div>
                 </div>
-              ))}
-            </div>
+                <button onClick={removeFile} className="p-2 text-slate-400 hover:text-red-400">
+                  <X size={20} />
+                </button>
+              </div>
+            )}
           </div>
+
+          {/* Or paste content */}
+          <div className="text-center text-slate-500 text-sm">— OU —</div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Collez votre contenu YAML</label>
+            <textarea
+              value={yamlContent}
+              onChange={(e) => { setYamlContent(e.target.value); setFile(null) }}
+              placeholder="name: CI&#10;on: push&#10;jobs:&#10;  build:&#10;    runs-on: ubuntu-latest&#10;    steps:&#10;      - uses: actions/checkout@v3"
+              className="w-full h-48 bg-slate-900 border border-slate-700 rounded-lg p-4 text-white font-mono text-sm resize-none focus:outline-none focus:border-blue-500"
+            />
+            <input
+              type="text"
+              value={fileName}
+              onChange={(e) => setFileName(e.target.value)}
+              placeholder="Nom du fichier (ex: ci.yml)"
+              className="mt-2 w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+            />
+          </div>
+
+          {/* Analyze Button */}
+          {yamlContent && (
+            <div className="flex justify-center">
+              <button
+                onClick={analyzeManual}
+                disabled={isAnalyzing}
+                className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-white transition-all ${isAnalyzing
+                  ? 'bg-slate-700 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-900/20'
+                  }`}
+              >
+                {isAnalyzing ? (
+                  <><Loader2 className="animate-spin" size={20} /> Analyse en cours...</>
+                ) : (
+                  <><Play size={20} /> Lancer l'analyse</>
+                )}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

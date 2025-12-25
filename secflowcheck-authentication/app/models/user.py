@@ -27,6 +27,7 @@ class UserResponse(BaseModel):
     full_name: str
     roles: List[str]
     is_active: bool
+    provider: str = "local"  # Expose auth provider (local, github, gitlab, google)
     created_at: datetime
 
     class Config:
@@ -44,4 +45,5 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     provider: Mapped[str] = mapped_column(String, default="local")
     provider_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    oauth_token: Mapped[Optional[str]] = mapped_column(String(1024), nullable=True)  # Store OAuth access token
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

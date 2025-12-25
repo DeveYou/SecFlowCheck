@@ -1,5 +1,6 @@
 from pydantic import BaseSettings
 import os
+import os
 
 class Settings(BaseSettings):
     APP_TITLE: str = "SecFlowCheck Report Service"

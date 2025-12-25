@@ -28,7 +28,7 @@ def init_extensions():
             client_kwargs={'scope': 'user:email'}
         )
 
-    # Register GitLab
+    # Register GitLab (OAuth2 only, not OIDC)
     if settings.GITLAB_CLIENT_ID and settings.GITLAB_CLIENT_SECRET:
         oauth.register(
             name='gitlab',
@@ -37,5 +37,5 @@ def init_extensions():
             authorize_url='https://gitlab.com/oauth/authorize',
             access_token_url='https://gitlab.com/oauth/token',
             api_base_url='https://gitlab.com/api/v4/',
-            client_kwargs={'scope': 'read_user openid profile email'}
+            client_kwargs={'scope': 'read_user read_api'}
         )

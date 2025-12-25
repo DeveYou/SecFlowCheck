@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  # This override is ONLY for local development.
+  # It automatically rides on top of docker-compose.yml when you run 'docker-compose up'.
+  
+  frontend:
+    build:
+      context: ./secflowcheck-frontend-v2
+      target: deps # Use the dependencies stage which has full node_modules
+      # We target 'deps' or 'builder' to avoid the full production build,
+      # but sticking to standard node image is often easier for dev to get full toolset.
+      # Here we just use the context and mount volumes.
+    command: /bin/sh -c "npm install --legacy-peer-deps && npm run dev"
+    volumes:
+      # Mount local source code into container for Hot Reload
+      - ./secflowcheck-frontend-v2:/app
+      # Keep container's node_modules (don't overwrite with host's empty one if incorrect)
+      - /app/node_modules
+    environment:
+      # Development specific env vars
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+    ports:
+      - "3000:3000"

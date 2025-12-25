@@ -22,7 +22,7 @@ from app.extensions import oauth
 router = APIRouter(tags=["Authentication"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
-@router.post("/register", response_model=TokenResponse)
+@router.post("/register", response_model=UserResponse)
 async def register(user_data: UserRegister, db: AsyncSession = Depends(get_db)):
     # Check if user exists
     query = select(User).where(User.email == user_data.email)
@@ -45,10 +45,10 @@ async def register(user_data: UserRegister, db: AsyncSession = Depends(get_db)):
     await db.refresh(new_user)
     
     # Generate tokens
-    access_token = create_access_token(data={"sub": new_user.email, "roles": new_user.roles})
-    refresh_token = create_refresh_token(data={"sub": new_user.email})
+    #access_token = create_access_token(data={"sub": new_user.email, "roles": new_user.roles})
+    #refresh_token = create_refresh_token(data={"sub": new_user.email})
     
-    return TokenResponse(access_token=access_token, refresh_token=refresh_token)
+    return new_user
 
 @router.post("/login", response_model=TokenResponse)
 async def login(user_data: UserLogin, db: AsyncSession = Depends(get_db)):
@@ -150,8 +150,46 @@ async def auth_callback(
     try:
         # Exchange code for token
         token = await client.authorize_access_token(request)
-        user_info = await fetch_oauth_user(client, provider, token)
+        
+        # Handle different providers
+        if provider == 'google':
+            user_info = token.get('userinfo')
+            if not user_info:
+                user_info = await client.userinfo(token=token)
+            email = user_info.get('email')
+            name = user_info.get('name', 'Unknown')
+            provider_id = str(user_info.get('sub'))
+            
+        elif provider == 'github':
+            # GitHub requires separate API call
+            resp = await client.get('user', token=token)
+            user_info = resp.json()
+            
+            # GitHub may not return email in profile, need separate call
+            email = user_info.get('email')
+            if not email:
+                emails_resp = await client.get('user/emails', token=token)
+                emails = emails_resp.json()
+                primary_email = next((e for e in emails if e.get('primary')), None)
+                email = primary_email.get('email') if primary_email else None
+            
+            name = user_info.get('name') or user_info.get('login', 'Unknown')
+            provider_id = str(user_info.get('id'))
+            
+        elif provider == 'gitlab':
+            # GitLab requires separate API call
+            resp = await client.get('user', token=token)
+            user_info = resp.json()
+            email = user_info.get('email')
+            name = user_info.get('name', 'Unknown')
+            provider_id = str(user_info.get('id'))
+            
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported provider: {provider}")
+            
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=400, detail=f"OAuth Handshake Failed: {str(e)}")
 
     # Extract user details (Normalize GitHub/GitLab/Google)
@@ -167,8 +205,12 @@ async def auth_callback(
     if not email:
         raise HTTPException(status_code=400, detail="Email not provided by OAuth provider")
 
-    # Get or create user in DB
-    user = await get_or_create_oauth_user(db, email, name, provider, provider_id)
+    # Extract OAuth access token for API calls
+    oauth_access_token = token.get('access_token')
+
+    # Get or create user (store OAuth token for repo API access)
+    user = await get_or_create_oauth_user(db, email, name, provider, provider_id, oauth_access_token)
+    
 
     # Generate YOUR Security JWT
     access_token = create_access_token(data={"sub": user.email, "roles": user.roles})
@@ -191,6 +233,6 @@ async def auth_callback(
         target_url = f"http://localhost:8765/callback?token={access_token}"
     else:
         # Redirect to the Frontend Dashboard
-        target_url = f"{settings.FRONTEND_URL}/auth/callback?token={access_token}"
+        target_url = f"{settings.FRONTEND_URL}/auth/callback?token={access_token}&provider={provider}"
 
     return RedirectResponse(url=target_url)

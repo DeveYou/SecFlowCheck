@@ -6,4 +6,5 @@ celery_app = Celery(
     broker=settings.CELERY_BROKER,
     backend=settings.CELERY_RESULT_BACKEND,
 )
+
 celery_app.conf.task_routes = {"app.tasks.*": {"queue": "analysis_queue"}}

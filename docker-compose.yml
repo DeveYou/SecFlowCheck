@@ -19,6 +19,22 @@ services:
       interval: 5s
       retries: 5
 
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: secflowcheck_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    networks:
+      - secflowcheck-network
+    depends_on:
+      - postgres
+
   mongo:
     image: mongo:6
     restart: unless-stopped
@@ -28,6 +44,21 @@ services:
       - "${MONGO_PORT}:27017"
     networks:
       - secflowcheck-network
+
+  mongo-express:
+    image: mongo-express
+    restart: unless-stopped
+    ports:
+      - "${MONGO_EXPRESS_PORT:-8081}:8081"
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USER:-admin}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD:-pass}
+    networks:
+      - secflowcheck-network
+    depends_on:
+      - mongo
 
   redis:
     image: redis:7
@@ -61,7 +92,8 @@ services:
   gateway:
     build: ./secflowcheck-gateway
     depends_on:
-      - discovery
+      discovery:
+        condition: service_healthy
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://discovery:8761/eureka/"
       SECRET_KEY: ${SECRET_KEY}
@@ -69,6 +101,10 @@ services:
       - "${GATEWAY_PORT}:8080"
     networks:
       - secflowcheck-network
+    volumes:
+      # AJOUT : Montage du fichier local dans le conteneur
+      # Assurez-vous que le chemin à gauche (./secflowcheck-gateway/...) pointe bien vers votre fichier
+      - ./secflowcheck-gateway/src/main/resources/application.yml:/config/application.yml
 
   auth:
     build: ./secflowcheck-authentication
@@ -80,7 +116,8 @@ services:
     entrypoint: [ "/wait-for-service.sh", "postgres", "5432" ]
     command: [ "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000" ]
     environment:
-      JWT_SECRET: ${JWT_SECRET}
+      JWT_SECRET: ${SECRET_KEY}
+      GATEWAY_URL: "http://localhost:8080"
       DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
       EUREKA_SERVER: "http://discovery:8761/eureka"
       ALGORITHM: ${ALGORITHM}
@@ -90,6 +127,7 @@ services:
       POSTGRES_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_DB: ${POSTGRES_DB}
+      INSTANCE_IP: auth
     ports:
       - "${AUTH_PORT}:8000"
     networks:
@@ -98,10 +136,12 @@ services:
   parser:
     build: ./secflowcheck-parser
     depends_on:
-      - discovery
+      discovery:
+        condition: service_healthy
     environment:
-      JWT_SECRET: ${JWT_SECRET}
+      JWT_SECRET: ${SECRET_KEY}
       EUREKA_SERVER: "http://discovery:8761/eureka"
+      INSTANCE_IP: parser
     ports:
       - "${PARSER_PORT}:8000"
     networks:
@@ -110,14 +150,21 @@ services:
   analyzer:
     build: ./secflowcheck-analyzer
     depends_on:
-      - rabbitmq
-      - discovery
+      rabbitmq:
+        condition: service_started
+      discovery:
+        condition: service_healthy
     environment:
       CELERY_BROKER: ${CELERY_BROKER}
       CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
-      REPORT_API_URL: "http://report:8003/reports"
+      REPORT_API_URL: "http://report:8003/"
       REPORT_JWT: ${REPORT_JWT}
       DEBUG: ${DEBUG}
+      JWT_SECRET: ${SECRET_KEY}
+      INSTANCE_IP: analyzer
+      SECFLOWCHECK_MODEL_PATH: /app/models/secflowcheck_model.joblib
+    volumes:
+      - ./secflowcheck-model/model/secflowcheck_model.joblib:/app/models/secflowcheck_model.joblib
     ports:
       - "${ANALYZER_PORT}:8000"
     networks:
@@ -135,31 +182,59 @@ services:
       REPORT_API_URL: "http://report:8003/reports"
       REPORT_JWT: ${REPORT_JWT}
       DEBUG: ${DEBUG}
+      SECFLOWCHECK_MODEL_PATH: /app/models/secflowcheck_model.joblib
+    volumes:
+      - ./secflowcheck-model/model/secflowcheck_model.joblib:/app/models/secflowcheck_model.joblib
     networks:
       - secflowcheck-network
 
   report:
     build: ./secflowcheck-report
     depends_on:
-      - mongo
-      - discovery
-      - analyzer
-    entrypoint: [ "/wait-for-service.sh", "mongo", "27017" ]
+      mongo:
+        condition: service_started
+      discovery:
+        condition: service_healthy
+      analyzer:
+        condition: service_started
+    entrypoint: [ "/wait-for-service.sh", "mongo", "27017" ] 
     command: [ "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8003" ]
     environment:
+      PYTHONUNBUFFERED: 1
       MONGO_URI: "mongodb://mongo:27017"
-      MONGO_DB: ${MONGO_DB}
-      JWT_SECRET: ${JWT_SECRET}
+      MONGO_DB: ${MONGO_DB:-secflowcheck_report_db}
+      JWT_SECRET: ${SECRET_KEY}
       DEBUG: ${DEBUG}
       API_KEY: ${API_KEY}
+      INSTANCE_IP: report
     ports:
       - "${REPORT_PORT}:8000"
     networks:
       - secflowcheck-network
 
+  frontend:
+    build:
+      context: ./secflowcheck-frontend-v2
+      dockerfile: Dockerfile
+      target: runner # Build for production in this context, OR override for dev
+    # For Development (Hot Reload), override command and volumes:
+    # command: npm run dev
+    # volumes:
+    #   - ./secflowcheck-frontend-v2:/app
+    #   - /app/node_modules
+    environment:
+      - API_URL=http://localhost:8080 # Client-side access to Gateway
+    ports:
+      - "3000:3000"
+    networks:
+      - secflowcheck-network
+    depends_on:
+      - gateway
+
 volumes:
   mongo-data:
   postgres-data:
+  pgadmin-data:
 
 
 networks:

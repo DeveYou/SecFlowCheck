@@ -7,7 +7,7 @@ from weasyprint import HTML
 from fastapi.responses import StreamingResponse
 import io
 
-router = APIRouter(prefix="/reports", tags=["Reports"])
+router = APIRouter(prefix="", tags=["Reports"])
 templates = Jinja2Templates(directory="app/templates")
 
 NOT_FOUND = "Report not found"

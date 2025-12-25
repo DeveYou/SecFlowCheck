@@ -1,10 +1,11 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import py_eureka_client.eureka_client as eureka_client
 
 from app.config import settings
 from app.database import engine, Base
-from app.routes import auth_routes
+from app.routes import auth_routes, repo_routes
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -34,6 +35,14 @@ from app.extensions import init_extensions
 
 app = FastAPI(title=settings.APP_TITLE, lifespan=lifespan)
 
+# app.add_middleware(
+#      CORSMiddleware,
+#      allow_origins=["http://localhost:3000"],
+#      allow_credentials=True,
+#      allow_methods=["*"],
+#      allow_headers=["*"],
+#  )
+
 # Add Session Middleware for OAuth
 app.add_middleware(SessionMiddleware, secret_key=settings.SESSION_SECRET)
 
@@ -41,6 +50,7 @@ app.add_middleware(SessionMiddleware, secret_key=settings.SESSION_SECRET)
 init_extensions()
 
 app.include_router(auth_routes.router)
+app.include_router(repo_routes.router)
 
 print("Loaded settings:", settings.dict())
 

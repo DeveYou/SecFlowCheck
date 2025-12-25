@@ -5,10 +5,9 @@ from app.models.report_doc import Report
 
 COLLECTION_NAME = "reports"
 
-async def save_report(db, report: dict) -> str:
-    doc = Report(**report)
-    await doc.insert()
-    return str(doc.id)
+async def save_report(db, report: Report) -> str:
+    await report.insert()
+    return str(report.id)
 
 
 async def get_report(db, report_id: str) -> Optional[Dict]:
@@ -44,6 +43,9 @@ async def list_reports(
     async for doc in cursor:
         doc["id"] = str(doc["_id"])
         doc.pop("_id", None)
+        # Convert datetime to ISO string for JSON serialization
+        if "created_at" in doc and doc["created_at"]:
+            doc["created_at"] = doc["created_at"].isoformat()
         results.append(doc)
     return results
 

@@ -1,4 +1,6 @@
-from fastapi import FastAPI, HTTPException, Body
+from fastapi import FastAPI
+from contextlib import asynccontextmanager
+import py_eureka_client.eureka_client as eureka_client
 from app.services.parser_service import ParserService
 from app.models.schemas import ParsedPipeline, ParseRequest
 from app.config import settings

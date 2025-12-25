@@ -1,4 +1,8 @@
 *.env
 *.venv
 */.venv
+
+*/.next/
+.idea/
 scripts/*
+.vscode/*
