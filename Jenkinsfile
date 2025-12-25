@@ -38,8 +38,9 @@ pipeline {
                 stage('Python Services') {
                     steps {
                         script {
-                            // Install Python/Pip directly in the container (works because we run as root)
-                            sh 'apt-get update && apt-get install -y python3 python3-pip python3-venv'
+                            // Install Python/Pip/Venv
+                            // python3-full ensures we have all standard lib modules
+                            sh 'apt-get update && apt-get install -y python3-full python3-venv'
                             
                             def pythonServices = [
                                 'secflowcheck-authentication',
@@ -51,10 +52,12 @@ pipeline {
                             pythonServices.each { service ->
                                 dir(service) {
                                     echo "Building ${service}..."
-                                    // python3 -m pip is safer than just pip
-                                    // using --break-system-packages (if needed on newer debian) or standard install
-                                    sh 'python3 -m pip install --upgrade pip --break-system-packages || python3 -m pip install --upgrade pip'
-                                    sh 'python3 -m pip install -r requirements.txt --break-system-packages || python3 -m pip install -r requirements.txt'
+                                    // Create a virtual environment to avoid system package conflicts
+                                    sh 'python3 -m venv venv'
+                                    
+                                    // Use the pip inside the virtual environment
+                                    sh 'venv/bin/pip install --upgrade pip'
+                                    sh 'venv/bin/pip install -r requirements.txt'
                                 }
                             }
                         }
