@@ -53,6 +53,7 @@ pipeline {
                                 dir(service) {
                                     echo "Building ${service}..."
                                     // Create a virtual environment to avoid system package conflicts
+                                    sh 'rm -rf venv'
                                     sh 'python3 -m venv venv'
                                     
                                     // Use the pip inside the virtual environment
