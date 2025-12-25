@@ -36,7 +36,13 @@ pipeline {
                 }
 
                 stage('Python Services') {
-                    // python tool configuration if available or assume 'python' on PATH
+                    agent {
+                        docker { 
+                            image 'python:3.9' 
+                            // Reuse the workspace so we can access checked out files
+                            reuseNode true 
+                        }
+                    }
                     steps {
                         script {
                             def pythonServices = [
