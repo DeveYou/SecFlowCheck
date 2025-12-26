@@ -84,6 +84,70 @@ pipeline {
             }
         }
 
+        stage('SonarQube Analysis') {
+            parallel {
+                stage('Java Analysis') {
+                    tools {
+                        maven 'Maven 3.9.6'
+                        jdk 'jdk-17'
+                    }
+                    steps {
+                        script {
+                            def javaServices = ['secflowcheck-gateway', 'secflowcheck-discovery']
+                            javaServices.each { service ->
+                                dir(service) {
+                                    echo "Running SonarQube for ${service}..."
+                                    try {
+                                        sh "mvn sonar:sonar -Dsonar.projectKey=${service} -Dsonar.host.url=http://sonarqube:9000 -Dsonar.login=admin -Dsonar.password=admin"
+                                    } catch (Exception e) {
+                                        echo "SonarQube analysis failed for ${service}: ${e.message}"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                stage('Data & Frontend Analysis') {
+                    tools {
+                        nodejs 'node-18' 
+                    }
+                    steps {
+                        script {
+                            // Python Services
+                            def pythonServices = [
+                                'secflowcheck-authentication',
+                                'secflowcheck-model',
+                                'secflowcheck-parser',
+                                'secflowcheck-report',
+                                'secflowcheck-analyzer'
+                            ]
+                             pythonServices.each { service ->
+                                dir(service) {
+                                     echo "Running SonarQube for ${service}..."
+                                     try {
+                                         // Using npx to run sonar-scanner without installing binary on host
+                                         sh "npx -y sonar-scanner -Dsonar.projectKey=${service} -Dsonar.sources=. -Dsonar.host.url=http://sonarqube:9000 -Dsonar.login=admin -Dsonar.password=admin"
+                                     } catch (Exception e) {
+                                         echo "SonarQube analysis failed for ${service}: ${e.message}"
+                                     }
+                                }
+                            }
+
+                            // Frontend
+                            dir('secflowcheck-frontend-v2') {
+                                echo "Running SonarQube for Frontend..."
+                                try {
+                                    sh 'npx -y sonar-scanner -Dsonar.projectKey=secflowcheck-frontend-v2 -Dsonar.sources=src -Dsonar.host.url=http://sonarqube:9000 -Dsonar.login=admin -Dsonar.password=admin'
+                                } catch (Exception e) {
+                                    echo "SonarQube analysis failed for Frontend: ${e.message}"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         stage('Docker Build') {
             steps {
                 script {
