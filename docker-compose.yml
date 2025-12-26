@@ -256,4 +256,5 @@ volumes:
 
 networks:
   secflowcheck-network:
+    name: secflowcheck-network
     driver: bridge
