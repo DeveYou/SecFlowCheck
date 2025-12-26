@@ -162,7 +162,7 @@ def scan(
         console.print(f"[red]Service Communication Error:[/red] {e}")
         raise typer.Exit(code=2)
 
-    risk = result_data.get("risk_score", "UNKNOWN")
+    risk = result_data.get("score", "UNKNOWN")
     grade = result_data.get("grade", "-")
     findings = result_data.get("findings", [])
 
@@ -186,7 +186,7 @@ def scan(
         for f in findings:
             table.add_row(
                 f.get("severity", "INFO"),
-                f.get("message", ""),
+                f.get("description", ""),
                 str(f.get("location", "Unknown"))
             )
 

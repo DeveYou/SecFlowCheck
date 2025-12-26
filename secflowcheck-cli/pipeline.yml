@@ -1,0 +1,71 @@
+name: "Vulnerable Build Pipeline"
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  # VULNERABILITY: Allows manual trigger with unsafe inputs
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+
+# VULNERABILITY: Excessive permissions granted to the GITHUB_TOKEN for the entire workflow
+permissions: write-all
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    # VULNERABILITY: Hardcoded secrets in environment variables
+    env:
+      DB_PASSWORD: "super_secret_password_123!" 
+      AWS_ACCESS_KEY: "AKIAIOSFODNN7EXAMPLE"
+      API_TOKEN: "12345-abcde-67890-fghij"
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # VULNERABILITY: Using an unpinned action version (@latest) which is susceptible to supply chain attacks
+      - name: Setup Node.js
+        uses: actions/setup-node@latest
+        with:
+          node-version: '14'
+
+      # VULNERABILITY: Command Injection risk. User input (github.head_ref) is used directly in a shell command.
+      # An attacker could name a branch `main; rm -rf /` to execute malicious code.
+      - name: Print Branch Name
+        run: echo "Building branch ${{ github.head_ref }}"
+
+      # VULNERABILITY: Untrusted Code Execution (Curling a script and piping to bash)
+      # There is no checksum validation or version pinning for the external script.
+      - name: Install Custom Tools
+        run: |
+          curl -sL https://example.com/install-tools.sh | bash
+
+      # VULNERABILITY: Logging secrets. This might print the secret to the build logs.
+      - name: Debug Environment
+        run: |
+          echo "Deploying with API Key: $API_TOKEN"
+
+      - name: Build Application
+        run: npm install && npm run build
+
+      # VULNERABILITY: Insecure Docker build. Using the 'latest' tag for the base image in the Dockerfile (implicit)
+      # and pushing to a registry without scanning.
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t myapp:latest .
+          docker login -u myuser -p $DB_PASSWORD
+          docker push myapp:latest
+
+      # VULNERABILITY: Uploading artifacts without retention limits or specific paths, potentially leaking sensitive files
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: ./dist
