@@ -98,7 +98,7 @@ pipeline {
                                 dir(service) {
                                     echo "Running SonarQube for ${service}..."
                                     try {
-                                        sh "mvn sonar:sonar -Dsonar.projectKey=${service} -Dsonar.host.url=http://sonarqube:9000 -Dsonar.login=admin -Dsonar.password=admin"
+                                        sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.10.0.2594:sonar -Dsonar.projectKey=${service} -Dsonar.host.url=http://sonarqube:9000 -Dsonar.login=admin -Dsonar.password=admin"
                                     } catch (Exception e) {
                                         echo "SonarQube analysis failed for ${service}: ${e.message}"
                                     }
