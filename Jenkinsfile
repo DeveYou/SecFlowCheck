@@ -98,7 +98,7 @@ pipeline {
                                 dir(service) {
                                     echo "Running SonarQube for ${service}..."
                                     try {
-                                        sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.10.0.2594:sonar -Dsonar.projectKey=${service} -Dsonar.host.url=http://sonarqube:9000 -Dsonar.login=admin -Dsonar.password=admin"
+                                        sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.10.0.2594:sonar -Dsonar.projectKey=${service} -Dsonar.host.url=http://sonarqube:9000 -Dsonar.token=squ_99490209e850fe7cd3e7142b52719cd2cc443533"
                                     } catch (Exception e) {
                                         echo "SonarQube analysis failed for ${service}: ${e.message}"
                                     }
@@ -126,7 +126,7 @@ pipeline {
                                      echo "Running SonarQube for ${service}..."
                                      try {
                                          // Using npx to run sonar-scanner without installing binary on host
-                                         sh "npx -y sonar-scanner -Dsonar.projectKey=${service} -Dsonar.sources=. -Dsonar.host.url=http://sonarqube:9000 -Dsonar.login=admin -Dsonar.password=admin"
+                                         sh "npx -y sonar-scanner -Dsonar.projectKey=${service} -Dsonar.sources=. -Dsonar.host.url=http://sonarqube:9000 -Dsonar.token=squ_99490209e850fe7cd3e7142b52719cd2cc443533"
                                      } catch (Exception e) {
                                          echo "SonarQube analysis failed for ${service}: ${e.message}"
                                      }
@@ -137,7 +137,7 @@ pipeline {
                             dir('secflowcheck-frontend-v2') {
                                 echo "Running SonarQube for Frontend..."
                                 try {
-                                    sh 'npx -y sonar-scanner -Dsonar.projectKey=secflowcheck-frontend-v2 -Dsonar.sources=src -Dsonar.host.url=http://sonarqube:9000 -Dsonar.login=admin -Dsonar.password=admin'
+                                    sh 'npx -y sonar-scanner -Dsonar.projectKey=secflowcheck-frontend-v2 -Dsonar.sources=src -Dsonar.host.url=http://sonarqube:9000 -Dsonar.token=squ_99490209e850fe7cd3e7142b52719cd2cc443533'
                                 } catch (Exception e) {
                                     echo "SonarQube analysis failed for Frontend: ${e.message}"
                                 }
