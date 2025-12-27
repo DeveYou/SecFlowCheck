@@ -110,7 +110,6 @@ async def login_oauth(provider: str, request: Request, cli: bool = False):
     return await client.authorize_redirect(request, redirect_uri, state=state_str)
 
 
-@router.get("/callback/{provider}", name="auth_callback")
 async def _fetch_user_info(client, provider, token):
     """Fetcher helper for different providers"""
     if provider == 'google':
