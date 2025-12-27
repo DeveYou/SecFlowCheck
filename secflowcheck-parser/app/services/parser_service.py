@@ -37,30 +37,38 @@ class ParserService:
             findings=findings
         )
 
-    def _extract_features(self, data: dict):
+    def _count_jobs_and_steps(self, data: dict):
         num_jobs = 0
         num_steps = 0
-        findings = []
+        
+        if not isinstance(data, dict):
+            return num_jobs, num_steps
 
-        if isinstance(data, dict):
-            # Heuristic for Jobs
-            if 'jobs' in data: # GitHub
-                jobs = data['jobs']
-                if isinstance(jobs, dict):
-                    num_jobs = len(jobs)
-                    for _, j in jobs.items():
-                        if isinstance(j, dict) and 'steps' in j:
-                            num_steps += len(j['steps'])
-            else: # GitLab or generic
-                # Count keys that look like jobs (have 'script' or 'stage')
-                for k, v in data.items():
-                    if isinstance(v, dict) and ('script' in v or 'stage' in v):
-                        num_jobs += 1
-                        if 'script' in v:
-                            if isinstance(v['script'], list):
-                                num_steps += len(v['script'])
-                            else:
-                                num_steps += 1
+        # Heuristic for Jobs
+        if 'jobs' in data: # GitHub
+            jobs = data['jobs']
+            if isinstance(jobs, dict):
+                num_jobs = len(jobs)
+                for _, j in jobs.items():
+                    if isinstance(j, dict) and 'steps' in j:
+                        num_steps += len(j['steps'])
+        else: # GitLab or generic
+            # Count keys that look like jobs (have 'script' or 'stage')
+            for _, v in data.items():
+                if isinstance(v, dict) and ('script' in v or 'stage' in v):
+                    num_jobs += 1
+                    if 'script' in v:
+                        if isinstance(v['script'], list):
+                            num_steps += len(v['script'])
+                        else:
+                            num_steps += 1
+        return num_jobs, num_steps
+
+    def _extract_features(self, data: dict):
+        findings = []
+        
+        # Count jobs and steps
+        num_jobs, num_steps = self._count_jobs_and_steps(data)
 
         # Recursive scan
         self._traverse(data, "", findings)
