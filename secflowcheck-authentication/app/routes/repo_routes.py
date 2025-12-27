@@ -12,9 +12,11 @@ from app.database import get_db
 from app.models.user import User
 from app.config import settings
 
+
 router = APIRouter(tags=["Repositories"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
+REPO_ACCESS_ERROR = "Repository access only available for GitHub/GitLab users"
 
 import logging
 
@@ -64,7 +66,7 @@ async def list_repositories(user: User = Depends(get_current_user_with_token)):
     """List user's repositories from GitHub or GitLab"""
     try:
         if user.provider not in ['github', 'gitlab']:
-            raise HTTPException(status_code=400, detail="Repository access only available for GitHub/GitLab users")
+            raise HTTPException(status_code=400, detail=REPO_ACCESS_ERROR)
         
         if not user.oauth_token:
             raise HTTPException(status_code=400, detail="No OAuth token available. Please re-login with GitHub/GitLab")
@@ -116,7 +118,7 @@ async def list_repo_contents(
     """List contents of a repository directory, filtering for YAML files"""
     
     if user.provider not in ['github', 'gitlab']:
-        raise HTTPException(status_code=400, detail="Repository access only available for GitHub/GitLab users")
+        raise HTTPException(status_code=400, detail=REPO_ACCESS_ERROR)
     
     if not user.oauth_token:
         raise HTTPException(status_code=400, detail="No OAuth token available")
@@ -180,7 +182,7 @@ async def get_file_content(
     """Get content of a specific file from repository"""
     
     if user.provider not in ['github', 'gitlab']:
-        raise HTTPException(status_code=400, detail="Repository access only available for GitHub/GitLab users")
+        raise HTTPException(status_code=400, detail=REPO_ACCESS_ERROR)
     
     if not user.oauth_token:
         raise HTTPException(status_code=400, detail="No OAuth token available")
