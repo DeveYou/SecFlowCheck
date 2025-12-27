@@ -106,7 +106,7 @@ class ParserService:
             # Check for suspicious keys (env vars etc) - only if key is a string
             if isinstance(k, str) and any(s in k.lower() for s in self.SECRET_VALUE_KEYWORDS):
                 # If the value looks like a hardcoded string
-                if isinstance(v, str) and not v.startswith('$') and not '{{' in v:
+                if isinstance(v, str) and not v.startswith('$') and '{{' not in v:
                         findings.append(Finding(
                             type='secret', 
                             message=f"Potential secret in key '{k}'", 
