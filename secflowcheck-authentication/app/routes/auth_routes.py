@@ -111,6 +111,68 @@ async def login_oauth(provider: str, request: Request, cli: bool = False):
 
 
 @router.get("/callback/{provider}", name="auth_callback")
+async def _fetch_user_info(client, provider, token):
+    """Fetcher helper for different providers"""
+    if provider == 'google':
+        user_info = token.get('userinfo')
+        if not user_info:
+            user_info = await client.userinfo(token=token)
+        return user_info
+        
+    elif provider == 'github':
+        resp = await client.get('user', token=token)
+        user_info = resp.json()
+        
+        # GitHub may not return email in profile, need separate call
+        if not user_info.get('email'):
+            emails_resp = await client.get('user/emails', token=token)
+            emails = emails_resp.json()
+            primary_email = next((e for e in emails if e.get('primary')), None)
+            if primary_email:
+                user_info['email'] = primary_email.get('email')
+        return user_info
+
+    elif provider == 'gitlab':
+        resp = await client.get('user', token=token)
+        return resp.json()
+    
+    else:
+        raise HTTPException(status_code=400, detail=f"Unsupported provider: {provider}")
+
+def _extract_user_details(user_info, provider):
+    """Normalize user details from different providers"""
+    email = user_info.get('email')
+    
+    # Fallback for GitHub (if email is private and API didn't return it)
+    if not email and provider == "github":
+        email = f"{user_info.get('login')}@github.placeholder.com"
+
+    name = user_info.get('name') or user_info.get('login') or "Unknown User"
+    provider_id = str(user_info.get('sub') or user_info.get('id'))
+    
+    if not email:
+        raise HTTPException(status_code=400, detail="Email not provided by OAuth provider")
+        
+    return email, name, provider_id
+
+def _get_redirect_url(request, access_token, provider):
+    """Determine redirect URL based on state"""
+    is_cli = False
+    state = request.query_params.get("state")
+    
+    if state:
+        try:
+            decoded_state = json.loads(base64.urlsafe_b64decode(state).decode())
+            is_cli = decoded_state.get("is_cli", False)
+        except Exception:
+            pass 
+
+    if is_cli:
+        return f"http://localhost:8765/callback?token={access_token}"
+    else:
+        return f"{settings.FRONTEND_URL}/auth/callback?token={access_token}&provider={provider}"
+
+@router.get("/callback/{provider}", name="auth_callback")
 async def auth_callback(
     provider: str, 
     request: Request, 
@@ -124,91 +186,27 @@ async def auth_callback(
         raise HTTPException(status_code=404, detail="Provider not found")
     
     try:
-        # Exchange code for token
         token = await client.authorize_access_token(request)
+        user_info = await _fetch_user_info(client, provider, token)
         
-        # Handle different providers
-        if provider == 'google':
-            user_info = token.get('userinfo')
-            if not user_info:
-                user_info = await client.userinfo(token=token)
-            email = user_info.get('email')
-            name = user_info.get('name', 'Unknown')
-            provider_id = str(user_info.get('sub'))
-            
-        elif provider == 'github':
-            # GitHub requires separate API call
-            resp = await client.get('user', token=token)
-            user_info = resp.json()
-            
-            # GitHub may not return email in profile, need separate call
-            email = user_info.get('email')
-            if not email:
-                emails_resp = await client.get('user/emails', token=token)
-                emails = emails_resp.json()
-                primary_email = next((e for e in emails if e.get('primary')), None)
-                email = primary_email.get('email') if primary_email else None
-            
-            name = user_info.get('name') or user_info.get('login', 'Unknown')
-            provider_id = str(user_info.get('id'))
-            
-        elif provider == 'gitlab':
-            # GitLab requires separate API call
-            resp = await client.get('user', token=token)
-            user_info = resp.json()
-            email = user_info.get('email')
-            name = user_info.get('name', 'Unknown')
-            provider_id = str(user_info.get('id'))
-            
-        else:
-            raise HTTPException(status_code=400, detail=f"Unsupported provider: {provider}")
-            
     except Exception as e:
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=400, detail=f"OAuth Handshake Failed: {str(e)}")
 
-    # Extract user details (Normalize GitHub/GitLab/Google)
-    email = user_info.get('email')
+    # Extract user details
+    email, name, provider_id = _extract_user_details(user_info, provider)
     
-    # Fallback for GitHub (if email is private)
-    if not email and provider == "github":
-        email = f"{user_info.get('login')}@github.placeholder.com"
-
-    name = user_info.get('name') or user_info.get('login') or "Unknown User"
-    provider_id = str(user_info.get('sub') or user_info.get('id'))
-    
-    if not email:
-        raise HTTPException(status_code=400, detail="Email not provided by OAuth provider")
-
-    # Extract OAuth access token for API calls
+    # Get OAuth access token
     oauth_access_token = token.get('access_token')
 
-    # Get or create user (store OAuth token for repo API access)
+    # Get or create user
     user = await get_or_create_oauth_user(db, email, name, provider, provider_id, oauth_access_token)
     
-
-    # Generate YOUR Security JWT
+    # Generate JWT
     access_token = create_access_token(data={"sub": user.email, "roles": user.roles})
     
-    # Check 'State' to determine redirection target
-    is_cli = False
-    state = request.query_params.get("state")
-    
-    if state:
-        try:
-            # Decode the state we sent earlier
-            decoded_state = json.loads(base64.urlsafe_b64decode(state).decode())
-            is_cli = decoded_state.get("is_cli", False)
-        except Exception:
-            pass # If state is invalid, default to False
-
-    # Redirect to appropriate destination
-    if is_cli:
-        # Redirect to the local CLI server
-        target_url = f"http://localhost:8765/callback?token={access_token}"
-    else:
-        # Redirect to the Frontend Dashboard
-        target_url = f"{settings.FRONTEND_URL}/auth/callback?token={access_token}&provider={provider}"
+    # Redirect
+    target_url = _get_redirect_url(request, access_token, provider)
 
     return RedirectResponse(url=target_url)
