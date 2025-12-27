@@ -84,40 +84,48 @@ class ParserService:
             privileged_access=privileged_access
         ), findings
 
+    def _check_string_value(self, value, path, findings):
+        if re.search(self.SECRETS_PATTERN, value):
+             findings.append(Finding(
+                 type='secret', 
+                 message="Secret pattern detected in value", 
+                 location=path, 
+                 severity="CRITICAL"
+            ))
+        if re.search(self.PERMISSIONS_PATTERN, value):
+             findings.append(Finding(
+                 type='permission', 
+                 message="Privileged access detected", 
+                 location=path, 
+                 severity="HIGH"
+            ))
+
+    def _traverse_dict(self, obj, path, findings):
+        for k, v in obj.items():
+            current_path = f"{path}.{k}" if path else str(k)
+            # Check for suspicious keys (env vars etc) - only if key is a string
+            if isinstance(k, str) and any(s in k.lower() for s in self.SECRET_VALUE_KEYWORDS):
+                # If the value looks like a hardcoded string
+                if isinstance(v, str) and not v.startswith('$') and not '{{' in v:
+                        findings.append(Finding(
+                            type='secret', 
+                            message=f"Potential secret in key '{k}'", 
+                            location=current_path, 
+                            severity="CRITICAL"
+                    ))
+            
+            self._traverse(v, current_path, findings)
+
+    def _traverse_list(self, obj, path, findings):
+        for i, item in enumerate(obj):
+            self._traverse(item, f"{path}[{i}]", findings)
+
     def _traverse(self, obj, path, findings):
         if isinstance(obj, dict):
-            for k, v in obj.items():
-                current_path = f"{path}.{k}" if path else str(k)
-                # Check for suspicious keys (env vars etc) - only if key is a string
-                if isinstance(k, str) and any(s in k.lower() for s in self.SECRET_VALUE_KEYWORDS):
-                    # If the value looks like a hardcoded string
-                    if isinstance(v, str) and not v.startswith('$') and not '{{' in v:
-                         findings.append(Finding(
-                             type='secret', 
-                             message=f"Potential secret in key '{k}'", 
-                             location=current_path, 
-                             severity="CRITICAL"
-                        ))
-                
-                self._traverse(v, current_path, findings)
+            self._traverse_dict(obj, path, findings)
         
         elif isinstance(obj, list):
-            for i, item in enumerate(obj):
-                self._traverse(item, f"{path}[{i}]", findings)
+            self._traverse_list(obj, path, findings)
         
         elif isinstance(obj, str):
-            # Check for suspicious values
-            if re.search(self.SECRETS_PATTERN, obj):
-                 findings.append(Finding(
-                     type='secret', 
-                     message="Secret pattern detected in value", 
-                     location=path, 
-                     severity="CRITICAL"
-                ))
-            if re.search(self.PERMISSIONS_PATTERN, obj):
-                 findings.append(Finding(
-                     type='permission', 
-                     message="Privileged access detected", 
-                     location=path, 
-                     severity="HIGH"
-                ))
+            self._check_string_value(obj, path, findings)
