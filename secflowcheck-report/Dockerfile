@@ -23,8 +23,8 @@ COPY ./app ./app
 COPY .env .
 
 COPY wait-for-service.sh /wait-for-service.sh
-RUN sed -i 's/\r$//' /wait-for-service.sh
-RUN chmod +x /wait-for-service.sh
+RUN sed -i 's/\r$//' /wait-for-service.sh && \
+    chmod +x /wait-for-service.sh
 
 EXPOSE 8003
 
