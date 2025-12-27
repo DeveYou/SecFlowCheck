@@ -108,6 +108,54 @@ async def list_repositories(user: User = Depends(get_current_user_with_token)):
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
 
+async def _fetch_repo_contents(client, user, owner, repo, path):
+    """Examples fetching logic for GitHub/GitLab"""
+    if user.provider == 'github':
+        url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
+        response = await client.get(
+            url,
+            headers={
+                "Authorization": f"Bearer {user.oauth_token}",
+                "Accept": "application/vnd.github.v3+json"
+            }
+        )
+    else:  # gitlab
+        # GitLab uses project ID or URL-encoded path
+        project_path = f"{owner}/{repo}".replace("/", "%2F")
+        encoded_path = path.replace("/", "%2F") if path else ""
+        url = f"https://gitlab.com/api/v4/projects/{project_path}/repository/tree"
+        response = await client.get(
+            url,
+            headers={"Authorization": f"Bearer {user.oauth_token}"},
+            params={"path": path, "per_page": 100}
+        )
+    return response
+
+def _process_repo_contents(contents, provider):
+    """Filter and normalize repo contents"""
+    result = []
+    # Ensure contents is a list (GitHub API returns dict for single file, list for dir)
+    items = contents if isinstance(contents, list) else [contents]
+    
+    for item in items:
+        if provider == 'github':
+            name = item.get("name", "")
+            item_type = item.get("type", "")
+            item_path = item.get("path", "")
+        else:  # gitlab
+            name = item.get("name", "")
+            item_type = "dir" if item.get("type") == "tree" else "file"
+            item_path = item.get("path", "")
+        
+        # Include directories and YAML files
+        if item_type == "dir" or name.endswith(('.yml', '.yaml')):
+            result.append({
+                "name": name,
+                "type": item_type,
+                "path": item_path
+            })
+    return result
+
 @router.get("/{owner}/{repo}/contents")
 async def list_repo_contents(
     owner: str, 
@@ -124,52 +172,12 @@ async def list_repo_contents(
         raise HTTPException(status_code=400, detail="No OAuth token available")
     
     async with httpx.AsyncClient() as client:
-        if user.provider == 'github':
-            url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
-            response = await client.get(
-                url,
-                headers={
-                    "Authorization": f"Bearer {user.oauth_token}",
-                    "Accept": "application/vnd.github.v3+json"
-                }
-            )
-        else:  # gitlab
-            # GitLab uses project ID or URL-encoded path
-            project_path = f"{owner}/{repo}".replace("/", "%2F")
-            encoded_path = path.replace("/", "%2F") if path else ""
-            url = f"https://gitlab.com/api/v4/projects/{project_path}/repository/tree"
-            response = await client.get(
-                url,
-                headers={"Authorization": f"Bearer {user.oauth_token}"},
-                params={"path": path, "per_page": 100}
-            )
+        response = await _fetch_repo_contents(client, user, owner, repo, path)
         
         if response.status_code != 200:
             raise HTTPException(status_code=response.status_code, detail="Failed to fetch repository contents")
         
-        contents = response.json()
-        
-        # Filter and normalize
-        result = []
-        for item in contents if isinstance(contents, list) else [contents]:
-            if user.provider == 'github':
-                name = item.get("name", "")
-                item_type = item.get("type", "")
-                item_path = item.get("path", "")
-            else:  # gitlab
-                name = item.get("name", "")
-                item_type = "dir" if item.get("type") == "tree" else "file"
-                item_path = item.get("path", "")
-            
-            # Include directories and YAML files
-            if item_type == "dir" or name.endswith(('.yml', '.yaml')):
-                result.append({
-                    "name": name,
-                    "type": item_type,
-                    "path": item_path
-                })
-        
-        return result
+        return _process_repo_contents(response.json(), user.provider)
 
 
 @router.get("/{owner}/{repo}/file/{file_path:path}")
