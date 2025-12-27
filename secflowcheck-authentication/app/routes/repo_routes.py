@@ -122,7 +122,7 @@ async def _fetch_repo_contents(client, user, owner, repo, path):
     else:  # gitlab
         # GitLab uses project ID or URL-encoded path
         project_path = f"{owner}/{repo}".replace("/", "%2F")
-        encoded_path = path.replace("/", "%2F") if path else ""
+
         url = f"https://gitlab.com/api/v4/projects/{project_path}/repository/tree"
         response = await client.get(
             url,
