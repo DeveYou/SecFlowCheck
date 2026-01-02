@@ -1,0 +1,42 @@
+name: Production Build & Deploy (VULNERABLE)
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions: write-all
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    
+    container:
+      image: node:16
+      options: --privileged
+
+    env:
+      AWS_ACCESS_KEY_ID: "AKIAIOSFODNN7EXAMPLE" 
+      AWS_SECRET_ACCESS_KEY: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+      DB_PASSWORD: "super_secret_password_123!"
+      STRIPE_API_KEY: "sk_live_51LbB7WIq8..."
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@master
+
+      - name: Install Dependencies
+        run: npm install
+      - name: Run Tests
+        run: |
+          echo "Running tests with DB_PASSWORD..."
+          ./run-tests.sh --password $DB_PASSWORD
+          
+      - name: Deploy to Production
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.HOST }}
+          username: "root" # Mauvaise pratique (Root user)
+          password: "admin_password" # Secret en clair dans les inputs
+          script: whoami
