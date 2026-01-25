@@ -9,7 +9,8 @@ SecFlowCheck est une plateforme complète d'analyse de sécurité pour les pipel
 4.  [Accès aux Services](#-accès-aux-services)
 5.  [Fonctionnalités Clés](#-fonctionnalités-clés)
 6.  [CLI](#-cli-interface-en-ligne-de-commande)
-7.  [Contribution](#-contribution)
+7.  [Démonstration Vidéo](#-démonstration-vidéo)
+8.  [Contribution](#-contribution)
 
 ## �🚀 Architecture
 
