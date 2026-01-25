@@ -170,8 +170,6 @@ Découvrez la présentation complète des fonctionnalités de SecFlowCheck (Dur�
 
 [![Regarder la vidéo de démo] https://drive.google.com/file/d/1OzSrPAD4I3fG5RAXR95navIbpO57zbki/view?usp=drive_link
 
-> 💡 **Note :** Cliquez sur l'image ci-dessus pour visionner la vidéo sur Google Drive. La démonstration couvre l'authentification, l'analyse IA et la génération de rapports.
-
 ## 🤝 Contribution
 
 Les contributions sont les bienvenues !
